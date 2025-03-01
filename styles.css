@@ -1,0 +1,79 @@
+/* 
+    Barra de navegacion
+ */
+nav{
+    background: #e8e8e8;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    padding: 5px;
+}
+
+.BtnNav{
+    background-color: #cbcbcb;
+    margin-inline: 10px;
+}
+
+/*
+    Cuerpo
+*/
+
+body{
+    margin: 10px;
+}
+
+.VentanaPrincipal{
+    margin-top: 10px;
+    display: flex;
+    height: 550px;
+    background-color: #e8e8e8;
+}
+
+/*
+    Seccion herramientas
+*/
+
+.VentanaHerramientas{
+    width: 250px;
+}
+
+.apartadoObjetos{
+    display: flex;
+    flex-direction: column;
+}
+
+.ubicarObjetos{
+    display: grid;
+    grid-template-columns: auto auto auto;
+    grid-template-rows: auto auto;
+    background-color: blue;
+}
+
+.declararObjetos{
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    background-color: red;
+}
+
+.BtnAgregar{
+    grid-column: 1 / span 2;
+}
+
+/*
+    Seccion interactividad
+*/
+
+.VentanaInteraccion{
+    display: flex;
+    width: 100%;
+    background-color: green;
+}      
+
+.SeccionCodigo{
+    width: 102%;
+    height: 99%;
+    border-color: gray;
+    outline: none;
+}  

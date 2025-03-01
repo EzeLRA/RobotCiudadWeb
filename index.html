@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+</head>
+
+<body>
+	<link rel="stylesheet" href="styles.css">
+
+	<!-- Barra de navegacion -->
+	<nav>
+		<button class="BtnNav">Compilar</button>
+		<button class="BtnNav">Ayuda</button>
+		<button class="BtnNav">Avanzar</button>
+	</nav>
+	
+	<!-- Zona de trabajo -->
+	<main class="VentanaPrincipal">
+		
+		<section class="VentanaHerramientas">
+
+			<div class="apartadoObjetos">
+
+				<div class="ubicarObjetos">
+					<label for="objetosLista">Objeto:</label>
+					<label for="avenidaPos">Avenida:</label>
+					<label for="callePos">Calle:</label>
+					<select id="objetosLista" name="ObjetosLista">
+						<option value="flores">Flores</option>
+        				<option value="papeles">Papeles</option>
+					</select>
+					<input type="number" id="avenidaPos" name="AvenidaPos" min="0" max="50" value="0">
+					<input type="number" id="callePos" name="CallePos" min="0" max="50" value="0">
+				</div>
+
+				<div class="declararObjetos">
+					<label for="cantidadObjeto">Cantidad:</label>
+					<input type="number" id="cantidadObjeto" name="CantidadObjeto" min="0" max="100" value="0">
+					<button class="BtnAgregar">Agregar</button>
+				</div>
+
+			</div>
+
+		</section>
+
+		<section class="VentanaInteraccion">
+			<!-- Text Area -->
+			<form>
+  				<textarea class="SeccionCodigo" rows="50" cols="145">Escribir codigo</textarea>
+			</form>
+
+		</section>
+	</main>
+	
+
+</body>
+
+</html>
