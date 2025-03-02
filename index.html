@@ -8,10 +8,9 @@
 
 <body>
 	<link rel="stylesheet" href="styles.css">
-
 	<!-- Barra de navegacion -->
 	<nav>
-		<button class="BtnNav">Compilar</button>
+		<button class="BtnNav" onclick="compilar()">Compilar</button>
 		<button class="BtnNav">Ayuda</button>
 		<button class="BtnNav">Avanzar</button>
 	</nav>
@@ -48,13 +47,14 @@
 		<section class="VentanaInteraccion">
 			<!-- Text Area -->
 			<form>
-  				<textarea class="SeccionCodigo" rows="50" cols="145">Escribir codigo</textarea>
+  				<textarea class="SeccionCodigo" id="seccionCodigo" rows="50" cols="145">Escribir codigo</textarea>
 			</form>
 
 		</section>
 	</main>
 	
-
+	<!-- Link Codigo -->
+	<script src="code.js"></script>
 </body>
 
 </html>

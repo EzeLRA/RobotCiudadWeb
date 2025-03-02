@@ -8,6 +8,7 @@ nav{
     flex-wrap: nowrap;
     justify-content: center;
     padding: 5px;
+    border : 1px solid gray;
 }
 
 .BtnNav{
@@ -36,6 +37,7 @@ body{
 
 .VentanaHerramientas{
     width: 250px;
+    border : 1px solid gray;
 }
 
 .apartadoObjetos{
@@ -47,14 +49,13 @@ body{
     display: grid;
     grid-template-columns: auto auto auto;
     grid-template-rows: auto auto;
-    background-color: blue;
 }
 
 .declararObjetos{
     display: grid;
     grid-template-columns: auto auto;
     grid-template-rows: auto auto;
-    background-color: red;
+    margin-top: 10px;
 }
 
 .BtnAgregar{
@@ -68,7 +69,7 @@ body{
 .VentanaInteraccion{
     display: flex;
     width: 100%;
-    background-color: green;
+    background-color: #e8e8e8;
 }      
 
 .SeccionCodigo{
