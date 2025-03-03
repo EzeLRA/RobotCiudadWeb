@@ -1,5 +1,6 @@
 function verificarComentario(cad){
 	/*
+		-1 = se encontro palabras no contenidas en el comentario
 		0 = no se encontro simbolo {
 		1 = se encontro apertura {
 		2 = se encontro apertura y cierre { }
@@ -7,15 +8,19 @@ function verificarComentario(cad){
 	let comentarioValor = 0;
 	let linea = cad.split(" ");
 	let i = 0;
-	while((i<=linea.length-1)&&(comentarioValor<2)){
+	while((i<=linea.length-1)&&(comentarioValor<2)&&(comentarioValor > -1)){
 		if((linea[i].charAt(0) == "{")&&(linea[i].charAt(linea[i].length-1) == "}")){
-			comentarioValor += 2;
+			comentarioValor = 2;
 		}else{
-			if(linea[i].charAt(0) == "{"){
-				comentarioValor ++;
+			if((linea[i].charAt(0) == "{")&&(comentarioValor == 0)){
+				comentarioValor = 1;
 			}else{
-				if(linea[i].charAt(linea[i].length-1) == "}"){
-					comentarioValor ++;
+				if((linea[i].charAt(linea[i].length-1) == "}")&&(comentarioValor == 1)){
+					comentarioValor = 2;
+				}else{
+					if(comentarioValor == 0){
+						comentarioValor = -1;
+					}
 				}
 			}
 		}
@@ -38,9 +43,9 @@ function buscarPalabra(cad,clave){
 	return encontre;
 }
 
-function procesar(texto){
+function ubicarInicio(codigo){
 	let cumple = false;
-	let lineas = texto.split("\n");
+	let lineas = codigo.split("\n");
 	let i = 0;
 	let comentarioSimbolo = 0; //Verifica la apertura y cierre de comentario
 
@@ -48,12 +53,17 @@ function procesar(texto){
 	while((i<=lineas.length-1)&&(cumple == false)){
 		//Verifica comentarios al inicio
 		comentarioSimbolo = verificarComentario(lineas[i]);
+		console.log(comentarioSimbolo);
 		//Busca la palabra clave (programa)
 		if(((comentarioSimbolo == 0)||(comentarioSimbolo == 2))&&(buscarPalabra(lineas[i],"programa") == true)){
 			cumple = true;
+		}else{
+			if((comentarioSimbolo = -1)&&(buscarPalabra(lineas[i],"programa") == true)){
+				cumple = true;
+			}
 		}
 		i++;
-		comentarioSimbolo = 0;
+		
 	}
 	
 	return cumple;
@@ -62,7 +72,7 @@ function procesar(texto){
 function compilar(){
 	var codigo = document.getElementById("seccionCodigo").value;
 	if(codigo.length>0){
-		console.log(procesar(codigo));
+		console.log(ubicarInicio(codigo));
 	}else{
 		console.log("Seccion vacia");
 	}
