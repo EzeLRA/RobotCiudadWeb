@@ -1,60 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title></title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Entorno IDE</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-	<link rel="stylesheet" href="styles.css">
-	<!-- Barra de navegacion -->
-	<nav>
-		<button class="BtnNav" onclick="compilar()">Compilar</button>
-		<button class="BtnNav">Ayuda</button>
-		<button class="BtnNav">Avanzar</button>
-	</nav>
-	
-	<!-- Zona de trabajo -->
-	<main class="VentanaPrincipal">
-		
-		<section class="VentanaHerramientas">
+    <!-- Barra de navegacion -->
+    <nav>
+        <button class="BtnNav" onclick="compilar()">Compilar</button>
+        <button class="BtnNav" onclick="mostrarAyuda()">Ayuda</button>
+        <button class="BtnNav" onclick="avanzar()">Avanzar</button>
+        <div class="nav-right">
+            <button class="BtnNav theme-toggle" onclick="toggleTheme()">Tema Claro</button>
+        </div>
+    </nav>
+    
+    <!-- Zona de trabajo -->
+    <main class="VentanaPrincipal">
+        
+        <section class="VentanaHerramientas">
+            <div class="apartadoObjetos">
+                <h3>Panel de Objetos</h3>
+                
+                <div class="ubicarObjetos">
+                    <label for="objetosLista">Objeto:</label>
+                    <select id="objetosLista" name="ObjetosLista">
+                        <option value="flores">Flores</option>
+                        <option value="papeles">Papeles</option>
+                        <option value="arbol">Árbol</option>
+                        <option value="casa">Casa</option>
+                    </select>
+                    
+                    <label for="avenidaPos">Avenida:</label>
+                    <input type="number" id="avenidaPos" name="AvenidaPos" min="0" max="50" value="0">
+                    
+                    <label for="callePos">Calle:</label>
+                    <input type="number" id="callePos" name="CallePos" min="0" max="50" value="0">
+                </div>
 
-			<div class="apartadoObjetos">
+                <div class="declararObjetos">
+                    <label for="cantidadObjeto">Cantidad:</label>
+                    <input type="number" id="cantidadObjeto" name="CantidadObjeto" min="0" max="100" value="1">
+                    <button class="BtnAgregar" onclick="agregarObjeto()">Agregar</button>
+                </div>
+                
+                <div class="objetos-agregados">
+                    <h4>Objetos en escena:</h4>
+                    <ul id="lista-objetos"></ul>
+                </div>
+            </div>
+        </section>
 
-				<div class="ubicarObjetos">
-					<label for="objetosLista">Objeto:</label>
-					<label for="avenidaPos">Avenida:</label>
-					<label for="callePos">Calle:</label>
-					<select id="objetosLista" name="ObjetosLista">
-						<option value="flores">Flores</option>
-        				<option value="papeles">Papeles</option>
-					</select>
-					<input type="number" id="avenidaPos" name="AvenidaPos" min="0" max="50" value="0">
-					<input type="number" id="callePos" name="CallePos" min="0" max="50" value="0">
-				</div>
-
-				<div class="declararObjetos">
-					<label for="cantidadObjeto">Cantidad:</label>
-					<input type="number" id="cantidadObjeto" name="CantidadObjeto" min="0" max="100" value="0">
-					<button class="BtnAgregar">Agregar</button>
-				</div>
-
-			</div>
-
-		</section>
-
-		<section class="VentanaInteraccion">
-			<!-- Text Area -->
-			<form>
-  				<textarea class="SeccionCodigo" id="seccionCodigo" rows="50" cols="145">Escribir codigo</textarea>
-			</form>
-
-		</section>
-	</main>
-	
-	<!-- Link Codigo -->
-	<script src="code.js"></script>
+        <section class="VentanaInteraccion">
+            <div class="editor-header">
+                <span>script.js</span>
+                <div class="editor-options">
+                    <button class="editor-btn" onclick="autoFormatear()">Formatear</button>
+                    <button class="editor-btn" onclick="guardarCodigo()">Guardar</button>
+                </div>
+            </div>
+            <div class="editor-container">
+                <div class="line-numbers" id="line-numbers">1</div>
+                <textarea class="SeccionCodigo" id="seccionCodigo" placeholder="Escribe tu código aquí..." spellcheck="false"></textarea>
+            </div>
+        </section>
+    </main>
+    
+    <div class="status-bar">
+        <span id="cursor-position">Ln 1, Col 1</span>
+        <span id="file-info">JavaScript</span>
+        <span id="code-stats">0 palabras, 0 líneas</span>
+    </div>
+    
+    <!-- Modal de Ayuda -->
+    <div id="modal-ayuda" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal()">&times;</span>
+            <h2>Ayuda del IDE</h2>
+            <div class="help-content">
+                <h3>Funciones disponibles:</h3>
+                <ul>
+                    <li><code>crearObjeto(tipo, x, y)</code> - Crea un objeto en la posición especificada</li>
+                    <li><code>moverObjeto(id, x, y)</code> - Mueve un objeto a nueva posición</li>
+                    <li><code>eliminarObjeto(id)</code> - Elimina un objeto de la escena</li>
+                </ul>
+                <h3>Atajos de teclado:</h3>
+                <ul>
+                    <li><kbd>Ctrl + S</kbd> - Guardar código</li>
+                    <li><kbd>Ctrl + F</kbd> - Formatear código</li>
+                    <li><kbd>Ctrl + /</kbd> - Comment/Uncomment line</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="code.js"></script>
 </body>
-
 </html>

@@ -1,80 +1,457 @@
-/* 
-    Barra de navegacion
- */
-nav{
-    background: #e8e8e8;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: center;
-    padding: 5px;
-    border : 1px solid gray;
+/* Estilos generales */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
 
-.BtnNav{
-    background-color: #cbcbcb;
-    margin-inline: 10px;
-}
-
-/*
-    Cuerpo
-*/
-
-body{
-    margin: 10px;
-}
-
-.VentanaPrincipal{
-    margin-top: 10px;
-    display: flex;
-    height: 550px;
-    background-color: #e8e8e8;
-}
-
-/*
-    Seccion herramientas
-*/
-
-.VentanaHerramientas{
-    width: 250px;
-    border : 1px solid gray;
-}
-
-.apartadoObjetos{
+body {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    overflow: hidden;
+    height: 100vh;
     display: flex;
     flex-direction: column;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-.ubicarObjetos{
-    display: grid;
-    grid-template-columns: auto auto auto;
-    grid-template-rows: auto auto;
+body.light-theme {
+    background-color: #f5f5f5;
+    color: #333;
 }
 
-.declararObjetos{
-    display: grid;
-    grid-template-columns: auto auto;
-    grid-template-rows: auto auto;
-    margin-top: 10px;
-}
-
-.BtnAgregar{
-    grid-column: 1 / span 2;
-}
-
-/*
-    Seccion interactividad
-*/
-
-.VentanaInteraccion{
+/* Barra de navegación */
+nav {
+    background-color: #2d2d2d;
+    padding: 10px;
     display: flex;
-    width: 100%;
-    background-color: #e8e8e8;
-}      
+    border-bottom: 1px solid #3e3e3e;
+    transition: background-color 0.3s, border-color 0.3s;
+}
 
-.SeccionCodigo{
-    width: 102%;
-    height: 99%;
-    border-color: gray;
-    outline: none;
-}  
+.light-theme nav {
+    background-color: #e0e0e0;
+    border-bottom-color: #ccc;
+    color: #333;
+}
+
+.nav-right {
+    margin-left: auto;
+}
+
+.BtnNav {
+    background-color: #0e639c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    margin-right: 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.BtnNav:hover {
+    background-color: #1177bb;
+}
+
+.light-theme .BtnNav {
+    background-color: #4a90e2;
+}
+
+.light-theme .BtnNav:hover {
+    background-color: #3a80d2;
+}
+
+.theme-toggle {
+    background-color: #444 !important;
+}
+
+.light-theme .theme-toggle {
+    background-color: #bbb !important;
+    color: #333;
+}
+
+/* Ventana principal */
+.VentanaPrincipal {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Panel de herramientas */
+.VentanaHerramientas {
+    width: 300px;
+    background-color: #252526;
+    padding: 15px;
+    border-right: 1px solid #3e3e3e;
+    overflow-y: auto;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.light-theme .VentanaHerramientas {
+    background-color: #f0f0f0;
+    border-right-color: #ccc;
+    color: #333;
+}
+
+.apartadoObjetos {
+    margin-bottom: 20px;
+}
+
+.apartadoObjetos h3 {
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #3e3e3e;
+    transition: border-color 0.3s;
+}
+
+.light-theme .apartadoObjetos h3 {
+    border-bottom-color: #ccc;
+}
+
+.ubicarObjetos, .declararObjetos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.ubicarObjetos label, .declararObjetos label {
+    font-size: 14px;
+    color: #cccccc;
+    transition: color 0.3s;
+}
+
+.light-theme .ubicarObjetos label,
+.light-theme .declararObjetos label {
+    color: #666;
+}
+
+select, input[type="number"] {
+    background-color: #3c3c3c;
+    color: #d4d4d4;
+    border: 1px solid #3e3e3e;
+    padding: 5px;
+    border-radius: 3px;
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.light-theme select,
+.light-theme input[type="number"] {
+    background-color: white;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.BtnAgregar {
+    background-color: #388a34;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.BtnAgregar:hover {
+    background-color: #3f9e3a;
+}
+
+.objetos-agregados {
+    margin-top: 20px;
+}
+
+.objetos-agregados h4 {
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #3e3e3e;
+    transition: border-color 0.3s;
+}
+
+.light-theme .objetos-agregados h4 {
+    border-bottom-color: #ccc;
+}
+
+#lista-objetos {
+    list-style-type: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#lista-objetos li {
+    padding: 5px;
+    border-bottom: 1px solid #3e3e3e;
+    display: flex;
+    justify-content: space-between;
+    transition: border-color 0.3s;
+}
+
+.light-theme #lista-objetos li {
+    border-bottom-color: #ddd;
+}
+
+#lista-objetos li button {
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.light-theme #lista-objetos li button {
+    color: #e53e3e;
+}
+
+/* Ventana de código - IDE */
+.VentanaInteraccion {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.editor-header {
+    background-color: #2d2d2d;
+    padding: 8px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #3e3e3e;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.light-theme .editor-header {
+    background-color: #e8e8e8;
+    border-bottom-color: #ccc;
+    color: #333;
+}
+
+.editor-options {
+    display: flex;
+    gap: 10px;
+}
+
+.editor-btn {
+    background-color: #3c3c3c;
+    color: #d4d4d4;
+    border: 1px solid #3e3e3e;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+.editor-btn:hover {
+    background-color: #4c4c4c;
+}
+
+.light-theme .editor-btn {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.light-theme .editor-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.editor-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.line-numbers {
+    background-color: #2d2d2d;
+    color: #858585;
+    padding: 10px 5px;
+    text-align: right;
+    font-size: 14px;
+    line-height: 1.5;
+    user-select: none;
+    overflow: hidden;
+    width: 50px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.light-theme .line-numbers {
+    background-color: #f0f0f0;
+    color: #999;
+}
+
+.SeccionCodigo {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+    border: none;
+    padding: 10px;
+    flex: 1;
+    resize: none;
+    font-size: 14px;
+    line-height: 1.5;
+    tab-size: 4;
+    -moz-tab-size: 4;
+    white-space: pre;
+    overflow: auto;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.light-theme .SeccionCodigo {
+    background-color: white;
+    color: #333;
+    border: 1px solid #e0e0e0;
+}
+
+/* Barra de estado */
+.status-bar {
+    background-color: #007acc;
+    color: white;
+    padding: 5px 10px;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    transition: background-color 0.3s;
+}
+
+.light-theme .status-bar {
+    background-color: #4a90e2;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal-content {
+    background-color: #2d2d2d;
+    margin: 5% auto;
+    padding: 20px;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 600px;
+    position: relative;
+    transition: background-color 0.3s;
+}
+
+.light-theme .modal-content {
+    background-color: white;
+    color: #333;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close:hover {
+    color: white;
+}
+
+.light-theme .close {
+    color: #888;
+}
+
+.light-theme .close:hover {
+    color: #000;
+}
+
+.help-content {
+    margin-top: 20px;
+}
+
+.help-content h3 {
+    margin: 15px 0 10px 0;
+    color: #569cd6;
+    transition: color 0.3s;
+}
+
+.light-theme .help-content h3 {
+    color: #1976d2;
+}
+
+.help-content ul {
+    margin-left: 20px;
+}
+
+.help-content li {
+    margin-bottom: 8px;
+}
+
+.help-content code {
+    background-color: #3c3c3c;
+    padding: 2px 5px;
+    border-radius: 3px;
+    transition: background-color 0.3s;
+}
+
+.light-theme .help-content code {
+    background-color: #f0f0f0;
+}
+
+.help-content kbd {
+    background-color: #3c3c3c;
+    border: 1px solid #555;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.light-theme .help-content kbd {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+}
+
+/* Tema oscuro para resaltado de sintaxis */
+.keyword {
+    color: #569cd6;
+}
+
+.string {
+    color: #ce9178;
+}
+
+.comment {
+    color: #6a9955;
+}
+
+.function {
+    color: #dcdcaa;
+}
+
+.number {
+    color: #b5cea8;
+}
+
+.light-theme .keyword {
+    color: #056bd6;
+}
+
+.light-theme .string {
+    color: #a31515;
+}
+
+.light-theme .comment {
+    color: #008000;
+}
+
+.light-theme .function {
+    color: #795e26;
+}
+
+.light-theme .number {
+    color: #098658;
+}
