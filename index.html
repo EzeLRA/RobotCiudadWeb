@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Entorno IDE</title>
+    <title>Entorno IDE con Ciudad</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -13,66 +13,114 @@
         <button class="BtnNav" onclick="compilar()">Compilar</button>
         <button class="BtnNav" onclick="mostrarAyuda()">Ayuda</button>
         <button class="BtnNav" onclick="avanzar()">Avanzar</button>
+        <button class="BtnNav" onclick="ejecutarRobot()">Ejecutar Robot</button>
         <div class="nav-right">
             <button class="BtnNav theme-toggle" onclick="toggleTheme()">Tema Claro</button>
         </div>
     </nav>
     
-    <!-- Zona de trabajo -->
-    <main class="VentanaPrincipal">
-        
-        <section class="VentanaHerramientas">
-            <div class="apartadoObjetos">
-                <h3>Panel de Objetos</h3>
-                
-                <div class="ubicarObjetos">
-                    <label for="objetosLista">Objeto:</label>
-                    <select id="objetosLista" name="ObjetosLista">
-                        <option value="flores">Flores</option>
-                        <option value="papeles">Papeles</option>
-                        <option value="arbol">Árbol</option>
-                        <option value="casa">Casa</option>
+    <!-- Contenido principal con scroll -->
+    <div class="main-content">
+        <!-- Entorno de ciudad cuadriculado -->
+        <section class="ciudad-container">
+            <div class="ciudad-header">
+                <h3>Mapa de la Ciudad</h3>
+                <div class="ciudad-controls">
+                    <label for="tamano-ciudad">Tamaño: </label>
+                    <select id="tamano-ciudad" onchange="cambiarTamanoCiudad()">
+                        <option value="10">10x10</option>
+                        <option value="15" selected>15x15</option>
+                        <option value="20">20x20</option>
                     </select>
-                    
-                    <label for="avenidaPos">Avenida:</label>
-                    <input type="number" id="avenidaPos" name="AvenidaPos" min="0" max="50" value="0">
-                    
-                    <label for="callePos">Calle:</label>
-                    <input type="number" id="callePos" name="CallePos" min="0" max="50" value="0">
+                    <button class="BtnNav" onclick="reiniciarCiudad()">Reiniciar</button>
                 </div>
+            </div>
+            <div class="ciudad-grid" id="ciudad-grid">
+                <!-- La cuadrícula se generará dinámicamente con JavaScript -->
+            </div>
+            <div class="ciudad-info">
+                <div class="robot-status" id="robot-status">
+                    Robot: Inactivo | Posición: (0, 0)
+                </div>
+                <div class="objetos-count">
+                    Objetos: <span id="contador-objetos">0</span>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Zona de trabajo -->
+        <main class="VentanaPrincipal">
+            
+            <section class="VentanaHerramientas">
+                <div class="apartadoObjetos">
+                    <h3>Panel de Objetos</h3>
+                    
+                    <div class="ubicarObjetos">
+                        <label for="objetosLista">Objeto:</label>
+                        <select id="objetosLista" name="ObjetosLista">
+                            <option value="flores">Flores</option>
+                            <option value="papeles">Papeles</option>
+                            <option value="arbol">Árbol</option>
+                            <option value="casa">Casa</option>
+                        </select>
+                        
+                        <label for="avenidaPos">Avenida (X):</label>
+                        <input type="number" id="avenidaPos" name="AvenidaPos" min="0" max="14" value="0">
+                        
+                        <label for="callePos">Calle (Y):</label>
+                        <input type="number" id="callePos" name="CallePos" min="0" max="14" value="0">
+                    </div>
 
-                <div class="declararObjetos">
-                    <label for="cantidadObjeto">Cantidad:</label>
-                    <input type="number" id="cantidadObjeto" name="CantidadObjeto" min="0" max="100" value="1">
-                    <button class="BtnAgregar" onclick="agregarObjeto()">Agregar</button>
+                    <div class="declararObjetos">
+                        <label for="cantidadObjeto">Cantidad:</label>
+                        <input type="number" id="cantidadObjeto" name="CantidadObjeto" min="1" max="100" value="1">
+                        <button class="BtnAgregar" onclick="agregarObjeto()">Agregar</button>
+                    </div>
+                    
+                    <div class="objetos-agregados">
+                        <h4>Objetos en escena:</h4>
+                        <ul id="lista-objetos"></ul>
+                    </div>
                 </div>
                 
-                <div class="objetos-agregados">
-                    <h4>Objetos en escena:</h4>
-                    <ul id="lista-objetos"></ul>
+                <div class="controles-robot">
+                    <h3>Controles del Robot</h3>
+                    <div class="direcciones-robot">
+                        <button class="btn-direccion" onclick="moverRobot('arriba')">↑</button>
+                        <div>
+                            <button class="btn-direccion" onclick="moverRobot('izquierda')">←</button>
+                            <button class="btn-direccion" onclick="moverRobot('detener')">■</button>
+                            <button class="btn-direccion" onclick="moverRobot('derecha')">→</button>
+                        </div>
+                        <button class="btn-direccion" onclick="moverRobot('abajo')">↓</button>
+                    </div>
+                    <div class="velocidad-robot">
+                        <label for="velocidad">Velocidad: </label>
+                        <input type="range" id="velocidad" min="1" max="10" value="5">
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section class="VentanaInteraccion">
-            <div class="editor-header">
-                <span>script.js</span>
-                <div class="editor-options">
-                    <button class="editor-btn" onclick="autoFormatear()">Formatear</button>
-                    <button class="editor-btn" onclick="guardarCodigo()">Guardar</button>
+            <section class="VentanaInteraccion">
+                <div class="editor-header">
+                    <span>robot.js</span>
+                    <div class="editor-options">
+                        <button class="editor-btn" onclick="autoFormatear()">Formatear</button>
+                        <button class="editor-btn" onclick="guardarCodigo()">Guardar</button>
+                    </div>
                 </div>
-            </div>
-            <div class="editor-container">
-                <div class="line-numbers" id="line-numbers">1</div>
-                <textarea class="SeccionCodigo" id="seccionCodigo" placeholder="Escribe tu código aquí..." spellcheck="false"></textarea>
-            </div>
-        </section>
-    </main>
-    
-    <div class="status-bar">
-        <span id="cursor-position">Ln 1, Col 1</span>
-        <span id="file-info">JavaScript</span>
-        <span id="code-stats">0 palabras, 0 líneas</span>
+                <div class="editor-container">
+                    <div class="line-numbers" id="line-numbers">1</div>
+                    <textarea class="SeccionCodigo" id="seccionCodigo" placeholder="Escribe tu código aquí..." spellcheck="false"></textarea>
+                </div>
+            </section>
+        </main>
+        
+        <div class="status-bar">
+            <span id="cursor-position">Ln 1, Col 1</span>
+            <span id="file-info">JavaScript</span>
+            <span id="code-stats">0 palabras, 0 líneas</span>
+        </div>
     </div>
     
     <!-- Modal de Ayuda -->
@@ -83,9 +131,10 @@
             <div class="help-content">
                 <h3>Funciones disponibles:</h3>
                 <ul>
-                    <li><code>crearObjeto(tipo, x, y)</code> - Crea un objeto en la posición especificada</li>
-                    <li><code>moverObjeto(id, x, y)</code> - Mueve un objeto a nueva posición</li>
-                    <li><code>eliminarObjeto(id)</code> - Elimina un objeto de la escena</li>
+                    <li><code>mover(direccion)</code> - Mueve el robot (arriba, abajo, izquierda, derecha)</li>
+                    <li><code>recoger()</code> - Recoge un objeto en la posición actual</li>
+                    <li><code>dejar()</code> - Deja un objeto en la posición actual</li>
+                    <li><code>sensar()</code> - Detecta objetos alrededor del robot</li>
                 </ul>
                 <h3>Atajos de teclado:</h3>
                 <ul>
@@ -96,7 +145,6 @@
             </div>
         </div>
     </div>
-    
-    <script src="code.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
