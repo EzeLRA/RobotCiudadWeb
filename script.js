@@ -6,10 +6,20 @@
         const codeStats = document.getElementById('code-stats');
         const listaObjetos = document.getElementById('lista-objetos');
         const modalAyuda = document.getElementById('modal-ayuda');
+        const panelContent = document.getElementById('panel-content');
+        const toggleButton = document.getElementById('toggle-button');
+        const editorContainer = document.getElementById('editor-container');
+        const panelControl = document.getElementById('panel-control');
+        const editorSection = document.getElementById('editor-section');
+        const togglePanelBtn = document.getElementById('toggle-panel-btn');
+        const zoomSlider = document.getElementById('zoom-ciudad');
+        const zoomValue = document.getElementById('zoom-value');
+        const tamanoActual = document.getElementById('tamano-actual');
 
         // Variables para la ciudad y el robot
         let ciudad = [];
-        let tamañoCiudad = 15;
+        let tamañoCiudad = 50;
+        let zoomCiudad = 10;
         let robot = {
             x: 0,
             y: 0,
@@ -19,6 +29,8 @@
         };
         let objetosCiudad = [];
         let intervaloRobot = null;
+        let panelMinimizado = false;
+        let panelContenidoMinimizado = false;
 
         // Contenido inicial de ejemplo
         const codigoInicial = `// Bienvenido a tu IDE de Robot
@@ -51,27 +63,87 @@ inicializar();`;
 
         codeArea.value = codigoInicial;
 
+        // Función para actualizar el zoom de la ciudad
+        function actualizarZoom() {
+            zoomCiudad = parseInt(zoomSlider.value);
+            zoomValue.textContent = zoomCiudad;
+            actualizarEstiloCuadricula();
+        }
+
+        // Función para actualizar el estilo de la cuadrícula según el zoom
+        function actualizarEstiloCuadricula() {
+            const grid = document.getElementById('ciudad-grid');
+            const cellSize = Math.max(5, Math.min(30, zoomCiudad)); // Tamaño entre 5px y 30px
+            grid.style.gridTemplateColumns = `repeat(${tamañoCiudad}, ${cellSize}px)`;
+            grid.style.gridTemplateRows = `repeat(${tamañoCiudad}, ${cellSize}px)`;
+            
+            // Actualizar el tamaño de fuente en función del zoom
+            const fontSize = Math.max(8, Math.min(16, Math.round(cellSize * 0.7)));
+            document.querySelectorAll('.celda-ciudad').forEach(celda => {
+                celda.style.fontSize = `${fontSize}px`;
+            });
+        }
+
+        // Función para minimizar/mostrar el panel completo (derecha a izquierda)
+        function togglePanel() {
+            panelMinimizado = !panelMinimizado;
+            
+            if (panelMinimizado) {
+                panelControl.classList.add('collapsed');
+                editorSection.classList.add('expanded');
+                togglePanelBtn.innerHTML = '<span>▶</span> Panel';
+            } else {
+                panelControl.classList.remove('collapsed');
+                editorSection.classList.remove('expanded');
+                togglePanelBtn.innerHTML = '<span>◀</span> Panel';
+            }
+            
+            // Guardar estado en localStorage
+            localStorage.setItem('panelMinimizado', panelMinimizado);
+        }
+
+        // Función para minimizar/mostrar el contenido del panel (interno)
+        function togglePanelContent() {
+            panelContenidoMinimizado = !panelContenidoMinimizado;
+            
+            if (panelContenidoMinimizado) {
+                panelContent.classList.add('collapsed');
+                toggleButton.classList.add('collapsed');
+                toggleButton.textContent = '►';
+            } else {
+                panelContent.classList.remove('collapsed');
+                toggleButton.classList.remove('collapsed');
+                toggleButton.textContent = '▼';
+            }
+            
+            // Guardar estado en localStorage
+            localStorage.setItem('panelContenidoMinimizado', panelContenidoMinimizado);
+        }
+
         // Inicializar la ciudad
         function inicializarCiudad() {
             const grid = document.getElementById('ciudad-grid');
             grid.innerHTML = '';
-            grid.style.gridTemplateColumns = `repeat(${tamañoCiudad}, 30px)`;
-            grid.style.gridTemplateRows = `repeat(${tamañoCiudad}, 30px)`;
             
             ciudad = [];
             objetosCiudad = [];
             actualizarContadorObjetos();
             
+            // Actualizar los valores máximos de los inputs de posición
+            document.getElementById('avenidaPos').max = tamañoCiudad - 1;
+            document.getElementById('callePos').max = tamañoCiudad - 1;
+            
+            // Crear la cuadrícula
             for (let y = 0; y < tamañoCiudad; y++) {
                 ciudad[y] = [];
                 for (let x = 0; x < tamañoCiudad; x++) {
                     const celda = document.createElement('div');
                     celda.className = 'celda-ciudad';
                     
-                    // Marcar calles y avenidas
+                    // Marcar calles y avenidas (cada 10 unidades)
                     if (x === 0 || y === 0 || x === tamañoCiudad - 1 || y === tamañoCiudad - 1) {
                         celda.classList.add('calle');
-                    } else if (x % 3 === 0 || y % 3 === 0) {
+                    } else if (x % 10 === 0 || y % 10 === 0) {
                         celda.classList.add('avenida');
                     }
                     
@@ -84,6 +156,12 @@ inicializar();`;
                 }
             }
             
+            // Actualizar el estilo de la cuadrícula
+            actualizarEstiloCuadricula();
+            
+            // Actualizar el texto del tamaño actual
+            tamanoActual.textContent = `${tamañoCiudad}x${tamañoCiudad}`;
+            
             // Colocar el robot en la posición inicial
             colocarRobot(0, 0);
             actualizarEstadoRobot();
@@ -94,6 +172,7 @@ inicializar();`;
             // Limpiar la posición anterior del robot
             document.querySelectorAll('.celda-robot').forEach(celda => {
                 celda.classList.remove('celda-robot');
+                celda.textContent = '';
             });
             
             // Actualizar posición del robot
@@ -235,8 +314,6 @@ inicializar();`;
         // Cambiar el tamaño de la ciudad
         function cambiarTamanoCiudad() {
             tamañoCiudad = parseInt(document.getElementById('tamano-ciudad').value);
-            document.getElementById('avenidaPos').max = tamañoCiudad - 1;
-            document.getElementById('callePos').max = tamañoCiudad - 1;
             inicializarCiudad();
         }
 
@@ -459,12 +536,27 @@ inicializar();`;
                 document.querySelector('.theme-toggle').textContent = 'Tema Oscuro';
             }
             
+            // Cargar estado del panel
+            const savedPanelState = localStorage.getItem('panelMinimizado');
+            if (savedPanelState === 'true') {
+                togglePanel();
+            }
+            
+            // Cargar estado del contenido del panel
+            const savedPanelContentState = localStorage.getItem('panelContenidoMinimizado');
+            if (savedPanelContentState === 'true') {
+                togglePanelContent();
+            }
+            
             // Inicializar números de línea y estadísticas
             updateLineNumbers();
             updateCursorPosition();
             
             // Inicializar la ciudad
             inicializarCiudad();
+            
+            // Actualizar el valor del zoom
+            actualizarZoom();
         });
 
         // Resaltado básico de sintaxis (simplificado)

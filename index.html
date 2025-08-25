@@ -15,6 +15,9 @@
         <button class="BtnNav" onclick="avanzar()">Avanzar</button>
         <button class="BtnNav" onclick="ejecutarRobot()">Ejecutar Robot</button>
         <div class="nav-right">
+            <button class="toggle-panel-btn" onclick="togglePanel()" id="toggle-panel-btn">
+                <span>◀</span> Panel
+            </button>
             <button class="BtnNav theme-toggle" onclick="toggleTheme()">Tema Claro</button>
         </div>
     </nav>
@@ -28,22 +31,35 @@
                 <div class="ciudad-controls">
                     <label for="tamano-ciudad">Tamaño: </label>
                     <select id="tamano-ciudad" onchange="cambiarTamanoCiudad()">
-                        <option value="10">10x10</option>
-                        <option value="15" selected>15x15</option>
-                        <option value="20">20x20</option>
+                        <option value="50">50x50</option>
+                        <option value="60">60x60</option>
+                        <option value="70">70x70</option>
+                        <option value="80">80x80</option>
+                        <option value="90">90x90</option>
+                        <option value="100">100x100</option>
                     </select>
+                    
+                    <label for="zoom-ciudad">Zoom: </label>
+                    <input type="range" id="zoom-ciudad" min="5" max="20" value="10" oninput="actualizarZoom()">
+                    
                     <button class="BtnNav" onclick="reiniciarCiudad()">Reiniciar</button>
                 </div>
             </div>
-            <div class="ciudad-grid" id="ciudad-grid">
-                <!-- La cuadrícula se generará dinámicamente con JavaScript -->
+            
+            <div class="ciudad-grid-container">
+                <div class="ciudad-grid" id="ciudad-grid">
+                    <!-- La cuadrícula se generará dinámicamente con JavaScript -->
+                </div>
             </div>
+            
             <div class="ciudad-info">
                 <div class="robot-status" id="robot-status">
                     Robot: Inactivo | Posición: (0, 0)
                 </div>
                 <div class="objetos-count">
-                    Objetos: <span id="contador-objetos">0</span>
+                    Objetos: <span id="contador-objetos">0</span> | 
+                    Tamaño: <span id="tamano-actual">50x50</span> | 
+                    Zoom: <span id="zoom-value">10</span>%
                 </div>
             </div>
         </section>
@@ -51,57 +67,67 @@
         <!-- Zona de trabajo -->
         <main class="VentanaPrincipal">
             
-            <section class="VentanaHerramientas">
-                <div class="apartadoObjetos">
-                    <h3>Panel de Objetos</h3>
-                    
-                    <div class="ubicarObjetos">
-                        <label for="objetosLista">Objeto:</label>
-                        <select id="objetosLista" name="ObjetosLista">
-                            <option value="flores">Flores</option>
-                            <option value="papeles">Papeles</option>
-                            <option value="arbol">Árbol</option>
-                            <option value="casa">Casa</option>
-                        </select>
-                        
-                        <label for="avenidaPos">Avenida (X):</label>
-                        <input type="number" id="avenidaPos" name="AvenidaPos" min="0" max="14" value="0">
-                        
-                        <label for="callePos">Calle (Y):</label>
-                        <input type="number" id="callePos" name="CallePos" min="0" max="14" value="0">
-                    </div>
-
-                    <div class="declararObjetos">
-                        <label for="cantidadObjeto">Cantidad:</label>
-                        <input type="number" id="cantidadObjeto" name="CantidadObjeto" min="1" max="100" value="1">
-                        <button class="BtnAgregar" onclick="agregarObjeto()">Agregar</button>
-                    </div>
-                    
-                    <div class="objetos-agregados">
-                        <h4>Objetos en escena:</h4>
-                        <ul id="lista-objetos"></ul>
-                    </div>
+            <section class="VentanaHerramientas" id="panel-control">
+                <!-- Cabecera del panel de objetos con botón de minimizar -->
+                <div class="panel-header" onclick="togglePanelContent()">
+                    <h3>
+                        <span>📦</span>
+                        Panel de Objetos
+                    </h3>
+                    <button class="toggle-button" id="toggle-button">▼</button>
                 </div>
                 
-                <div class="controles-robot">
-                    <h3>Controles del Robot</h3>
-                    <div class="direcciones-robot">
-                        <button class="btn-direccion" onclick="moverRobot('arriba')">↑</button>
-                        <div>
-                            <button class="btn-direccion" onclick="moverRobot('izquierda')">←</button>
-                            <button class="btn-direccion" onclick="moverRobot('detener')">■</button>
-                            <button class="btn-direccion" onclick="moverRobot('derecha')">→</button>
+                <!-- Contenido del panel de objetos -->
+                <div class="panel-content" id="panel-content">
+                    <div class="apartadoObjetos">
+                        <div class="ubicarObjetos">
+                            <label for="objetosLista">Objeto:</label>
+                            <select id="objetosLista" name="ObjetosLista">
+                                <option value="flores">Flores</option>
+                                <option value="papeles">Papeles</option>
+                                <option value="arbol">Árbol</option>
+                                <option value="casa">Casa</option>
+                            </select>
+                            
+                            <label for="avenidaPos">Avenida (X):</label>
+                            <input type="number" id="avenidaPos" name="AvenidaPos" min="0" value="0">
+                            
+                            <label for="callePos">Calle (Y):</label>
+                            <input type="number" id="callePos" name="CallePos" min="0" value="0">
                         </div>
-                        <button class="btn-direccion" onclick="moverRobot('abajo')">↓</button>
+
+                        <div class="declararObjetos">
+                            <label for="cantidadObjeto">Cantidad:</label>
+                            <input type="number" id="cantidadObjeto" name="CantidadObjeto" min="1" max="100" value="1">
+                            <button class="BtnAgregar" onclick="agregarObjeto()">Agregar</button>
+                        </div>
+                        
+                        <div class="objetos-agregados">
+                            <h4>Objetos en escena:</h4>
+                            <ul id="lista-objetos"></ul>
+                        </div>
                     </div>
-                    <div class="velocidad-robot">
-                        <label for="velocidad">Velocidad: </label>
-                        <input type="range" id="velocidad" min="1" max="10" value="5">
+                    
+                    <div class="controles-robot">
+                        <h3>Controles del Robot</h3>
+                        <div class="direcciones-robot">
+                            <button class="btn-direccion" onclick="moverRobot('arriba')">↑</button>
+                            <div>
+                                <button class="btn-direccion" onclick="moverRobot('izquierda')">←</button>
+                                <button class="btn-direccion" onclick="moverRobot('detener')">■</button>
+                                <button class="btn-direccion" onclick="moverRobot('derecha')">→</button>
+                            </div>
+                            <button class="btn-direccion" onclick="moverRobot('abajo')">↓</button>
+                        </div>
+                        <div class="velocidad-robot">
+                            <label for="velocidad">Velocidad: </label>
+                            <input type="range" id="velocidad" min="1" max="10" value="5">
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section class="VentanaInteraccion">
+            <section class="VentanaInteraccion" id="editor-section">
                 <div class="editor-header">
                     <span>robot.js</span>
                     <div class="editor-options">
@@ -109,7 +135,7 @@
                         <button class="editor-btn" onclick="guardarCodigo()">Guardar</button>
                     </div>
                 </div>
-                <div class="editor-container">
+                <div class="editor-container" id="editor-container">
                     <div class="line-numbers" id="line-numbers">1</div>
                     <textarea class="SeccionCodigo" id="seccionCodigo" placeholder="Escribe tu código aquí..." spellcheck="false"></textarea>
                 </div>

@@ -8,7 +8,7 @@
         
         html, body {
             height: 100%;
-            overflow: auto; /* Cambiado a auto para permitir scroll */
+            overflow: auto;
         }
         
         body {
@@ -16,7 +16,7 @@
             color: #d4d4d4;
             display: flex;
             flex-direction: column;
-            min-height: 100vh; /* Altura mínima de viewport */
+            min-height: 100vh;
             transition: background-color 0.3s, color 0.3s;
         }
 
@@ -43,6 +43,9 @@
 
         .nav-right {
             margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .BtnNav {
@@ -78,6 +81,33 @@
             color: #333;
         }
 
+        /* Botón para mostrar/ocultar panel */
+        .toggle-panel-btn {
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .toggle-panel-btn:hover {
+            background-color: #555;
+        }
+
+        .light-theme .toggle-panel-btn {
+            background-color: #ddd;
+            color: #333;
+        }
+
+        .light-theme .toggle-panel-btn:hover {
+            background-color: #ccc;
+        }
+
         /* Contenedor principal con scroll */
         .main-content {
             flex: 1;
@@ -91,9 +121,12 @@
         /* Entorno de ciudad cuadriculado */
         .ciudad-container {
             background-color: #333;
-            padding: 10px;
+            padding: 15px;
             border-radius: 5px;
             transition: background-color 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .light-theme .ciudad-container {
@@ -104,9 +137,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             color: white;
             transition: color 0.3s;
+            width: 100%;
+            max-width: 1200px;
         }
 
         .light-theme .ciudad-header {
@@ -121,19 +156,34 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .ciudad-controls input {
+            width: 80px;
+        }
+
+        .ciudad-grid-container {
+            width: 100%;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            max-width: 100%;
         }
 
         .ciudad-grid {
             display: grid;
-            grid-template-columns: repeat(15, 30px);
-            grid-template-rows: repeat(15, 30px);
             gap: 1px;
             background-color: #555;
             padding: 2px;
             border-radius: 4px;
             margin: 0 auto;
-            max-width: 480px;
             transition: background-color 0.3s;
+            max-width: 100%;
+            max-height: 70vh;
+            overflow: auto;
         }
 
         .light-theme .ciudad-grid {
@@ -145,9 +195,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 16px;
+            font-size: 12px;
             cursor: pointer;
             transition: background-color 0.3s;
+            aspect-ratio: 1/1;
+            min-width: 8px;
+            min-height: 8px;
         }
 
         .light-theme .celda-ciudad {
@@ -188,8 +241,8 @@
         .celda-objeto::after {
             content: "";
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 70%;
+            height: 70%;
             border-radius: 50%;
             background-color: #e74c3c;
         }
@@ -215,10 +268,12 @@
         .ciudad-info {
             display: flex;
             justify-content: space-between;
-            margin-top: 10px;
+            margin-top: 15px;
             color: white;
             font-size: 14px;
             transition: color 0.3s;
+            width: 100%;
+            max-width: 1200px;
         }
 
         .light-theme .ciudad-info {
@@ -241,8 +296,9 @@
         .VentanaPrincipal {
             display: flex;
             flex: 1;
-            min-height: 400px; /* Altura mínima para asegurar visibilidad */
+            min-height: 400px;
             gap: 15px;
+            position: relative;
         }
 
         /* Panel de herramientas */
@@ -252,8 +308,18 @@
             padding: 15px;
             border-radius: 5px;
             overflow-y: auto;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .VentanaHerramientas.collapsed {
+            transform: translateX(-100%);
+            width: 0;
+            padding: 0;
+            opacity: 0;
+            pointer-events: none;
         }
 
         .light-theme .VentanaHerramientas {
@@ -261,19 +327,62 @@
             color: #333;
         }
 
-        .apartadoObjetos {
-            margin-bottom: 20px;
-        }
-
-        .apartadoObjetos h3 {
+        /* Cabecera del panel de objetos */
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #3e3e3e;
-            transition: border-color 0.3s;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+            transition: background-color 0.3s;
         }
 
-        .light-theme .apartadoObjetos h3 {
-            border-bottom-color: #ccc;
+        .panel-header:hover {
+            background-color: #3c3c3c;
+        }
+
+        .light-theme .panel-header:hover {
+            background-color: #e0e0e0;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-button {
+            background: none;
+            border: none;
+            color: #d4d4d4;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.3s, color 0.3s;
+        }
+
+        .light-theme .toggle-button {
+            color: #333;
+        }
+
+        .toggle-button.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        /* Contenido del panel de objetos */
+        .panel-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
+            max-height: 1000px;
+            opacity: 1;
+        }
+
+        .panel-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
         }
 
         .ubicarObjetos, .declararObjetos {
@@ -365,7 +474,7 @@
             transition: color 0.3s;
         }
 
-        .light-theme #lista-objetos li button {
+        .light-theme .lista-objetos li button {
             color: #e53e3e;
         }
 
@@ -455,7 +564,13 @@
             background-color: #252526;
             border-radius: 5px;
             overflow: hidden;
+            transition: all 0.3s ease;
             transition: background-color 0.3s;
+        }
+
+        .VentanaInteraccion.expanded {
+            margin-left: 0;
+            width: 100%;
         }
 
         .light-theme .VentanaInteraccion {
@@ -482,6 +597,7 @@
         .editor-options {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
 
         .editor-btn {
@@ -507,6 +623,20 @@
 
         .light-theme .editor-btn:hover {
             background-color: #e0e0e0;
+        }
+
+        .minimize-btn {
+            background: none;
+            border: none;
+            color: #d4d4d4;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0 5px;
+            transition: color 0.3s;
+        }
+
+        .light-theme .minimize-btn {
+            color: #333;
         }
 
         .editor-container {
@@ -714,6 +844,7 @@
         /* Scrollbar personalizado */
         ::-webkit-scrollbar {
             width: 12px;
+            height: 12px;
         }
 
         ::-webkit-scrollbar-track {
@@ -740,4 +871,43 @@
 
         .light-theme ::-webkit-scrollbar-thumb:hover {
             background: #aaa;
+        }
+
+        /* Media queries para responsividad */
+        @media (max-width: 1200px) {
+            .ciudad-header, .ciudad-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .ciudad-controls {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .VentanaPrincipal {
+                flex-direction: column;
+            }
+            
+            .VentanaHerramientas {
+                width: 100%;
+            }
+            
+            .ciudad-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            nav {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .nav-right {
+                margin-left: 0;
+                width: 100%;
+                justify-content: flex-end;
+            }
         }
