@@ -15,6 +15,7 @@
         const zoomSlider = document.getElementById('zoom-ciudad');
         const zoomValue = document.getElementById('zoom-value');
         const tamanoActual = document.getElementById('tamano-actual');
+        const ventanaPrincipal = document.getElementById('ventana-principal');
 
         // Variables para la ciudad y el robot
         let ciudad = [];
@@ -32,36 +33,74 @@
         let panelMinimizado = false;
         let panelContenidoMinimizado = false;
 
-        // Contenido inicial de ejemplo
-        const codigoInicial = `// Bienvenido a tu IDE de Robot
-function inicializar() {
-    // Crear objetos en la escena
-    crearObjeto("flores", 5, 10);
-    crearObjeto("papeles", 15, 20);
-}
+        // Palabras clave de R-Info para resaltar (instrucciones de control)
+        const rinfoKeywords = ['si', 'sino', 'mientras', 'repetir'];
+        
+        // Contenido inicial de ejemplo en R-Info
+        const codigoInicial = `# Bienvenido a R-Info - Lenguaje de programación para robots
+# Las instrucciones de control se resaltan en azul
 
-// Función para crear objetos
-function crearObjeto(tipo, x, y) {
-    console.log(\`Creando \${tipo} en posición (\${x}, \${y})\`);
-    // Lógica para crear objeto...
-}
+# Ejemplo de programa básico
+repetir 3 veces:
+    mover(norte)
+    
+mientras hay_objeto():
+    recoger()
+    mover(este)
+    
+si sensar() == "flores":
+    repetir 5 veces:
+        mover(sur)
+sino:
+    mover(norte)
+    dejar()
 
-// Función para mover el robot
-function moverRobot(direccion) {
-    console.log(\`Moviendo robot hacia \${direccion}\`);
-    // Lógica para mover robot...
-}
-
-// Función para recoger objetos
-function recogerObjeto() {
-    console.log("Recogiendo objeto...");
-    // Lógica para recoger objeto...
-}
-
-// Inicializar la escena
-inicializar();`;
+# Función para buscar objetos
+mientras True:
+    si hay_objeto():
+        recoger()
+        romper
+    sino:
+        mover(este)`;
 
         codeArea.value = codigoInicial;
+
+        // Función para resaltar la sintaxis de R-Info
+        function resaltarSintaxis() {
+            const text = codeArea.value;
+            let highlightedText = text;
+            
+            // Resaltar comentarios (líneas que comienzan con #)
+            highlightedText = highlightedText.replace(/(#.*)/g, '<span class="comment">$1</span>');
+            
+            // Resaltar palabras clave (instrucciones de control)
+            rinfoKeywords.forEach(keyword => {
+                const regex = new RegExp(`\\b${keyword}\\b`, 'g');
+                highlightedText = highlightedText.replace(regex, `<span class="keyword">${keyword}</span>`);
+            });
+            
+            // Resaltar strings (entre comillas)
+            highlightedText = highlightedText.replace(/(".*?"|'.*?')/g, '<span class="string">$1</span>');
+            
+            // Resaltar números
+            highlightedText = highlightedText.replace(/\b(\d+)\b/g, '<span class="number">$1</span>');
+            
+            // Crear un div temporal para mantener la posición del cursor
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = highlightedText;
+            
+            // Obtener la posición actual del cursor
+            const cursorPos = codeArea.selectionStart;
+            const scrollPos = codeArea.scrollTop;
+            
+            // Reemplazar el contenido manteniendo los estilos
+            codeArea.innerHTML = tempDiv.innerHTML;
+            
+            // Restaurar la posición del cursor y scroll
+            codeArea.selectionStart = cursorPos;
+            codeArea.selectionEnd = cursorPos;
+            codeArea.scrollTop = scrollPos;
+        }
 
         // Función para actualizar el zoom de la ciudad
         function actualizarZoom() {
@@ -92,10 +131,12 @@ inicializar();`;
                 panelControl.classList.add('collapsed');
                 editorSection.classList.add('expanded');
                 togglePanelBtn.innerHTML = '<span>▶</span> Panel';
+                ventanaPrincipal.classList.add('panel-minimizado');
             } else {
                 panelControl.classList.remove('collapsed');
                 editorSection.classList.remove('expanded');
                 togglePanelBtn.innerHTML = '<span>◀</span> Panel';
+                ventanaPrincipal.classList.remove('panel-minimizado');
             }
             
             // Guardar estado en localStorage
@@ -295,8 +336,8 @@ inicializar();`;
                 robot.activo = true;
                 actualizarEstadoRobot();
                 
-                // Aquí iría el intérprete real del código
-                alert("Ejecutando código del robot...");
+                // Aquí iría el intérprete real del código R-Info
+                alert("Ejecutando código R-Info del robot...");
                 
             } catch (error) {
                 alert(`Error en el código: ${error.message}`);
@@ -395,8 +436,8 @@ inicializar();`;
                 const start = this.selectionStart;
                 const end = this.selectionEnd;
                 
-                this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 1;
+                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
             }
             
             // Atajos de teclado
@@ -431,7 +472,7 @@ inicializar();`;
             
             // Verificar si todas las líneas seleccionadas están comentadas
             for (let i = startLine - 1; i < endLine; i++) {
-                if (!lines[i].trim().startsWith('//')) {
+                if (!lines[i].trim().startsWith('#')) {
                     allCommented = false;
                     break;
                 }
@@ -441,25 +482,33 @@ inicializar();`;
             for (let i = startLine - 1; i < endLine; i++) {
                 if (allCommented) {
                     // Descomentar
-                    if (lines[i].trim().startsWith('//')) {
-                        lines[i] = lines[i].replace('//', '');
+                    if (lines[i].trim().startsWith('#')) {
+                        lines[i] = lines[i].replace('#', '');
                     }
                 } else {
                     // Comentar
-                    if (lines[i].trim() !== '' && !lines[i].trim().startsWith('//')) {
-                        lines[i] = '//' + lines[i];
+                    if (lines[i].trim() !== '' && !lines[i].trim().startsWith('#')) {
+                        lines[i] = '#' + lines[i];
                     }
                 }
             }
             
             codeArea.value = lines.join('\n');
             updateLineNumbers();
+            resaltarSintaxis();
         }
 
         // Eventos para actualizar interfaz
-        codeArea.addEventListener('input', updateLineNumbers);
+        codeArea.addEventListener('input', function() {
+            updateLineNumbers();
+            resaltarSintaxis();
+        });
+        
         codeArea.addEventListener('click', updateCursorPosition);
-        codeArea.addEventListener('keyup', updateCursorPosition);
+        codeArea.addEventListener('keyup', function() {
+            updateCursorPosition();
+            resaltarSintaxis();
+        });
         codeArea.addEventListener('scroll', function() {
             lineNumbers.scrollTop = this.scrollTop;
         });
@@ -467,7 +516,7 @@ inicializar();`;
         // Función de compilación
         function compilar() {
             const codigo = codeArea.value;
-            console.log('Compilando código:', codigo);
+            console.log('Compilando código R-Info:', codigo);
             
             // Simular compilación
             setTimeout(() => {
@@ -501,15 +550,15 @@ inicializar();`;
         // Función para formatear código
         function autoFormatear() {
             // Simular formateo de código
-            alert('Código formateado');
-            // En una implementación real, aquí integrarías una librería como Prettier
+            alert('Código R-Info formateado');
+            resaltarSintaxis();
         }
 
         // Función para guardar código
         function guardarCodigo() {
             const codigo = codeArea.value;
             // Simular guardado
-            console.log('Código guardado:', codigo);
+            console.log('Código R-Info guardado:', codigo);
             alert('Código guardado correctamente');
         }
 
@@ -526,6 +575,8 @@ inicializar();`;
                 // Guardar preferencia
                 localStorage.setItem('theme', 'dark');
             }
+            // Volver a resaltar la sintaxis para aplicar los colores del tema
+            resaltarSintaxis();
         }
 
         // Cargar preferencia de tema al iniciar y inicializar la ciudad
@@ -557,25 +608,7 @@ inicializar();`;
             
             // Actualizar el valor del zoom
             actualizarZoom();
-        });
-
-        // Resaltado básico de sintaxis (simplificado)
-        codeArea.addEventListener('input', function() {
-            // En una implementación real, usarías una librería como Prism.js o Highlight.js
-            // Esto es solo un ejemplo básico
-            const cursorPos = this.selectionStart;
             
-            // Palabras clave para resaltar (ejemplo)
-            const keywords = ['function', 'if', 'else', 'for', 'while', 'return', 'var', 'let', 'const', 'console'];
-            
-            let code = this.value;
-            
-            keywords.forEach(keyword => {
-                const regex = new RegExp(`\\b${keyword}\\b`, 'g');
-                code = code.replace(regex, `<span class="keyword">${keyword}</span>`);
-            });
-            
-            // Guardar posición del cursor
-            this.selectionStart = cursorPos;
-            this.selectionEnd = cursorPos;
+            // Aplicar resaltado de sintaxis inicial
+            resaltarSintaxis();
         });

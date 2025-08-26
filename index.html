@@ -65,7 +65,7 @@
         </section>
         
         <!-- Zona de trabajo -->
-        <main class="VentanaPrincipal">
+        <main class="VentanaPrincipal" id="ventana-principal">
             
             <section class="VentanaHerramientas" id="panel-control">
                 <!-- Cabecera del panel de objetos con botón de minimizar -->
@@ -129,7 +129,7 @@
 
             <section class="VentanaInteraccion" id="editor-section">
                 <div class="editor-header">
-                    <span>robot.js</span>
+                    <span>robot.r-info</span>
                     <div class="editor-options">
                         <button class="editor-btn" onclick="autoFormatear()">Formatear</button>
                         <button class="editor-btn" onclick="guardarCodigo()">Guardar</button>
@@ -137,31 +137,54 @@
                 </div>
                 <div class="editor-container" id="editor-container">
                     <div class="line-numbers" id="line-numbers">1</div>
-                    <textarea class="SeccionCodigo" id="seccionCodigo" placeholder="Escribe tu código aquí..." spellcheck="false"></textarea>
+                    <textarea class="SeccionCodigo" id="seccionCodigo" placeholder="Escribe tu código R-Info aquí..." spellcheck="false"></textarea>
+                </div>
+                <!-- Barra de estado ahora dentro de la sección de código -->
+                <div class="status-bar">
+                    <span id="cursor-position">Ln 1, Col 1</span>
+                    <span id="file-info">R-Info</span>
+                    <span id="code-stats">0 palabras, 0 líneas</span>
                 </div>
             </section>
         </main>
-        
-        <div class="status-bar">
-            <span id="cursor-position">Ln 1, Col 1</span>
-            <span id="file-info">JavaScript</span>
-            <span id="code-stats">0 palabras, 0 líneas</span>
-        </div>
     </div>
     
     <!-- Modal de Ayuda -->
     <div id="modal-ayuda" class="modal">
         <div class="modal-content">
             <span class="close" onclick="cerrarModal()">&times;</span>
-            <h2>Ayuda del IDE</h2>
+            <h2>Ayuda del IDE - Lenguaje R-Info</h2>
             <div class="help-content">
-                <h3>Funciones disponibles:</h3>
+                <h3>Instrucciones de control (resaltadas en azul):</h3>
                 <ul>
-                    <li><code>mover(direccion)</code> - Mueve el robot (arriba, abajo, izquierda, derecha)</li>
+                    <li><code class="keyword">si</code> - Condicional if</li>
+                    <li><code class="keyword">sino</code> - Condicional else</li>
+                    <li><code class="keyword">mientras</code> - Bucle while</li>
+                    <li><code class="keyword">repetir</code> - Bucle for</li>
+                </ul>
+                
+                <h3>Funciones disponibles para el robot:</h3>
+                <ul>
+                    <li><code>mover(direccion)</code> - Mueve el robot (norte, sur, este, oeste)</li>
                     <li><code>recoger()</code> - Recoge un objeto en la posición actual</li>
                     <li><code>dejar()</code> - Deja un objeto en la posición actual</li>
                     <li><code>sensar()</code> - Detecta objetos alrededor del robot</li>
+                    <li><code>hay_objeto()</code> - Comprueba si hay un objeto en la posición actual</li>
                 </ul>
+                
+                <h3>Ejemplo de código R-Info:</h3>
+                <pre><code># Este es un comentario
+mientras hay_objeto():
+    recoger()
+    mover(este)
+    dejar()
+    
+si sensar() == "flores":
+    repetir 5 veces:
+        mover(norte)
+sino:
+    mover(sur)</code></pre>
+                
                 <h3>Atajos de teclado:</h3>
                 <ul>
                     <li><kbd>Ctrl + S</kbd> - Guardar código</li>
