@@ -1,5 +1,4 @@
 // Elementos del DOM
-        const codeArea = document.getElementById('seccionCodigo');
         const lineNumbers = document.getElementById('line-numbers');
         const cursorPosition = document.getElementById('cursor-position');
         const fileInfo = document.getElementById('file-info');
@@ -32,74 +31,150 @@
         let intervaloRobot = null;
         let panelMinimizado = false;
         let panelContenidoMinimizado = false;
+        let codeEditor; // Variable global para el editor CodeMirror
 
         // Palabras clave de R-Info para resaltar (instrucciones de control)
-        const rinfoKeywords = ['si', 'sino', 'mientras', 'repetir'];
-        
-        // Contenido inicial de ejemplo en R-Info
-        const codigoInicial = `# Bienvenido a R-Info - Lenguaje de programación para robots
-# Las instrucciones de control se resaltan en azul
+        const rinfoKeywords = ['si', 'sino', 'mientras', 'repetir', 'romper', 'continuar', 'retornar', 'funcion'];
+        const rinfoBuiltins = ['mover', 'recoger', 'dejar', 'sensar', 'hay_objeto'];
 
-# Ejemplo de programa básico
-repetir 3 veces:
-    mover(norte)
-    
-mientras hay_objeto():
-    recoger()
-    mover(este)
-    
-si sensar() == "flores":
-    repetir 5 veces:
-        mover(sur)
-sino:
-    mover(norte)
-    dejar()
+        // Definir un modo personalizado para R-Info
+        CodeMirror.defineMode("rinfo", function(config, parserConfig) {
+            return {
+                startState: function() {
+                    return {
+                        inString: false,
+                        stringType: null,
+                        inComment: false
+                    };
+                },
+                token: function(stream, state) {
+                    // Comentarios
+                    if (state.inComment) {
+                        if (stream.match(/^.*$/)) {
+                            state.inComment = false;
+                        } else {
+                            stream.skipToEnd();
+                        }
+                        return "comment";
+                    }
+                    
+                    if (stream.match(/^#.*/)) {
+                        stream.skipToEnd();
+                        return "comment";
+                    }
+                    
+                    // Strings
+                    if (!state.inString) {
+                        if (stream.match(/^""".*"""/)) return "string";
+                        if (stream.match(/^'''.*'''/)) return "string";
+                        if (stream.match(/^".*?"/)) return "string";
+                        if (stream.match(/^'.*?'/)) return "string";
+                        
+                        if (stream.match(/^"""/)) {
+                            state.inString = true;
+                            state.stringType = '"""';
+                            return "string";
+                        }
+                        if (stream.match(/^'''/)) {
+                            state.inString = true;
+                            state.stringType = "'''";
+                            return "string";
+                        }
+                        if (stream.match(/^"/)) {
+                            state.inString = true;
+                            state.stringType = '"';
+                            return "string";
+                        }
+                        if (stream.match(/^'/)) {
+                            state.inString = true;
+                            state.stringType = "'";
+                            return "string";
+                        }
+                    } else {
+                        if (stream.match(state.stringType)) {
+                            state.inString = false;
+                            state.stringType = null;
+                        } else {
+                            stream.next();
+                        }
+                        return "string";
+                    }
+                    
+                    // Números
+                    if (stream.match(/^\d+/)) return "number";
+                    if (stream.match(/^\d+\.\d+/)) return "number";
+                    
+                    // Identificadores y palabras clave
+                    if (stream.match(/^[a-zA-Z_áéíóúñÑ][a-zA-Z0-9_áéíóúñÑ]*/)) {
+                        const word = stream.current();
+                        if (rinfoKeywords.includes(word)) return "keyword";
+                        if (rinfoBuiltins.includes(word)) return "builtin";
+                        return "variable";
+                    }
+                    
+                    // Operadores
+                    if (stream.match(/^[+\-*/%=&|<>!?:.,;{}[\]()]/)) return "operator";
+                    
+                    // Avanzar stream
+                    stream.next();
+                    return null;
+                },
+                indent: function(state, textAfter) {
+                    return 0;
+                },
+                electricInput: /^\s*[\}\]\)]$/,
+                closeBrackets: {pairs: '()[]{}""\'\''}
+            };
+        });
 
-# Función para buscar objetos
-mientras True:
-    si hay_objeto():
-        recoger()
-        romper
-    sino:
-        mover(este)`;
-
-        codeArea.value = codigoInicial;
-
-        // Función para resaltar la sintaxis de R-Info
-        function resaltarSintaxis() {
-            const text = codeArea.value;
-            let highlightedText = text;
-            
-            // Resaltar comentarios (líneas que comienzan con #)
-            highlightedText = highlightedText.replace(/(#.*)/g, '<span class="comment">$1</span>');
-            
-            // Resaltar palabras clave (instrucciones de control)
-            rinfoKeywords.forEach(keyword => {
-                const regex = new RegExp(`\\b${keyword}\\b`, 'g');
-                highlightedText = highlightedText.replace(regex, `<span class="keyword">${keyword}</span>`);
+        // Inicializar CodeMirror
+        function inicializarEditor() {
+            codeEditor = CodeMirror.fromTextArea(document.getElementById('seccionCodigo'), {
+                mode: "rinfo",
+                theme: "dracula",
+                lineNumbers: false, // Usamos nuestros propios números de línea
+                indentUnit: 4,
+                indentWithTabs: false,
+                lineWrapping: true,
+                autoCloseBrackets: true,
+                matchBrackets: true,
+                extraKeys: {
+                    "Tab": function(cm) {
+                        cm.replaceSelection("    ", "end");
+                    },
+                    "Ctrl-S": function(cm) {
+                        guardarCodigo();
+                    },
+                    "Ctrl-F": function(cm) {
+                        autoFormatear();
+                    },
+                    "Ctrl-/": function(cm) {
+                        toggleComment();
+                    }
+                }
             });
             
-            // Resaltar strings (entre comillas)
-            highlightedText = highlightedText.replace(/(".*?"|'.*?')/g, '<span class="string">$1</span>');
+            // Configurar el editor con un tamaño adecuado
+            codeEditor.setSize("100%", "100%");
             
-            // Resaltar números
-            highlightedText = highlightedText.replace(/\b(\d+)\b/g, '<span class="number">$1</span>');
+            // Eventos para actualizar interfaz
+            codeEditor.on("change", function() {
+                updateLineNumbers();
+                updateCodeStats();
+            });
             
-            // Crear un div temporal para mantener la posición del cursor
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = highlightedText;
+            codeEditor.on("cursorActivity", function() {
+                updateCursorPosition();
+            });
             
-            // Obtener la posición actual del cursor
-            const cursorPos = codeArea.selectionStart;
-            const scrollPos = codeArea.scrollTop;
+            codeEditor.on("scroll", function() {
+                lineNumbers.scrollTop = codeEditor.getScrollInfo().top;
+            });
             
-            // Reemplazar el contenido manteniendo los estilos
-            codeArea.innerHTML = tempDiv.innerHTML;
-            
-            // Restaurar la posición del cursor y scroll
-            codeArea.selectionStart = cursorPos;
-            codeArea.selectionEnd = cursorPos;
-            codeArea.scrollTop = scrollPos;
+            // Inicializar números de línea y estadísticas
+            updateLineNumbers();
+            updateCursorPosition();
+            updateCodeStats();
         }
 
         // Función para actualizar el zoom de la ciudad
@@ -112,7 +187,7 @@ mientras True:
         // Función para actualizar el estilo de la cuadrícula según el zoom
         function actualizarEstiloCuadricula() {
             const grid = document.getElementById('ciudad-grid');
-            const cellSize = Math.max(5, Math.min(30, zoomCiudad)); // Tamaño entre 5px y 30px
+            const cellSize = Math.max(5, Math.min(30, zoomCiudad)); // Tamaño entre 5px and 30px
             grid.style.gridTemplateColumns = `repeat(${tamañoCiudad}, ${cellSize}px)`;
             grid.style.gridTemplateRows = `repeat(${tamañoCiudad}, ${cellSize}px)`;
             
@@ -141,6 +216,11 @@ mientras True:
             
             // Guardar estado en localStorage
             localStorage.setItem('panelMinimizado', panelMinimizado);
+            
+            // Redimensionar el editor después de cambiar el panel
+            setTimeout(function() {
+                if (codeEditor) codeEditor.refresh();
+            }, 300);
         }
 
         // Función para minimizar/mostrar el contenido del panel (interno)
@@ -330,7 +410,7 @@ mientras True:
 
         // Ejecutar el código del robot
         function ejecutarRobot() {
-            const codigo = codeArea.value;
+            const codigo = codeEditor.getValue();
             try {
                 // Simular ejecución del código
                 robot.activo = true;
@@ -403,119 +483,46 @@ mientras True:
 
         // Actualizar números de línea
         function updateLineNumbers() {
-            const lines = codeArea.value.split('\n').length;
+            const lineCount = codeEditor.lineCount();
             let numbers = '';
-            for (let i = 1; i <= lines; i++) {
+            for (let i = 1; i <= lineCount; i++) {
                 numbers += i + '<br>';
             }
             lineNumbers.innerHTML = numbers;
-            
-            // Actualizar estadísticas
-            updateCodeStats();
         }
 
         // Actualizar estadísticas del código
         function updateCodeStats() {
-            const text = codeArea.value;
+            const text = codeEditor.getValue();
             const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-            const lineCount = codeArea.value.split('\n').length;
+            const lineCount = codeEditor.lineCount();
             codeStats.textContent = `${wordCount} palabras, ${lineCount} líneas`;
         }
 
         // Actualizar posición del cursor
         function updateCursorPosition() {
-            const line = codeArea.value.substr(0, codeArea.selectionStart).split('\n').length;
-            const col = codeArea.selectionStart - codeArea.value.lastIndexOf('\n', codeArea.selectionStart - 1);
-            cursorPosition.textContent = `Ln ${line}, Col ${col}`;
+            const cursor = codeEditor.getCursor();
+            cursorPosition.textContent = `Ln ${cursor.line + 1}, Col ${cursor.ch + 1}`;
         }
-
-        // Manejar tabulaciones
-        codeArea.addEventListener('keydown', function(e) {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const start = this.selectionStart;
-                const end = this.selectionEnd;
-                
-                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
-                this.selectionStart = this.selectionEnd = start + 4;
-            }
-            
-            // Atajos de teclado
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key) {
-                    case 's':
-                        e.preventDefault();
-                        guardarCodigo();
-                        break;
-                    case 'f':
-                        e.preventDefault();
-                        autoFormatear();
-                        break;
-                    case '/':
-                        e.preventDefault();
-                        toggleComment();
-                        break;
-                }
-            }
-        });
 
         // Función para comentar/descomentar línea
         function toggleComment() {
-            const start = codeArea.selectionStart;
-            const end = codeArea.selectionEnd;
-            const text = codeArea.value;
-            const startLine = text.substring(0, start).split('\n').length;
-            const endLine = text.substring(0, end).split('\n').length;
-            
-            let lines = text.split('\n');
-            let allCommented = true;
-            
-            // Verificar si todas las líneas seleccionadas están comentadas
-            for (let i = startLine - 1; i < endLine; i++) {
-                if (!lines[i].trim().startsWith('#')) {
-                    allCommented = false;
-                    break;
-                }
-            }
+            const from = codeEditor.getCursor("from");
+            const to = codeEditor.getCursor("to");
             
             // Comentar o descomentar según el caso
-            for (let i = startLine - 1; i < endLine; i++) {
-                if (allCommented) {
-                    // Descomentar
-                    if (lines[i].trim().startsWith('#')) {
-                        lines[i] = lines[i].replace('#', '');
-                    }
-                } else {
-                    // Comentar
-                    if (lines[i].trim() !== '' && !lines[i].trim().startsWith('#')) {
-                        lines[i] = '#' + lines[i];
-                    }
-                }
-            }
+            codeEditor.toggleComment({ 
+                lineComment: "#", 
+                blockComment: ["'''", "'''"] 
+            });
             
-            codeArea.value = lines.join('\n');
             updateLineNumbers();
-            resaltarSintaxis();
+            updateCodeStats();
         }
-
-        // Eventos para actualizar interfaz
-        codeArea.addEventListener('input', function() {
-            updateLineNumbers();
-            resaltarSintaxis();
-        });
-        
-        codeArea.addEventListener('click', updateCursorPosition);
-        codeArea.addEventListener('keyup', function() {
-            updateCursorPosition();
-            resaltarSintaxis();
-        });
-        codeArea.addEventListener('scroll', function() {
-            lineNumbers.scrollTop = this.scrollTop;
-        });
 
         // Función de compilación
         function compilar() {
-            const codigo = codeArea.value;
+            const codigo = codeEditor.getValue();
             console.log('Compilando código R-Info:', codigo);
             
             // Simular compilación
@@ -551,12 +558,11 @@ mientras True:
         function autoFormatear() {
             // Simular formateo de código
             alert('Código R-Info formateado');
-            resaltarSintaxis();
         }
 
         // Función para guardar código
         function guardarCodigo() {
-            const codigo = codeArea.value;
+            const codigo = codeEditor.getValue();
             // Simular guardado
             console.log('Código R-Info guardado:', codigo);
             alert('Código guardado correctamente');
@@ -566,17 +572,18 @@ mientras True:
         function toggleTheme() {
             document.body.classList.toggle('light-theme');
             const themeToggle = document.querySelector('.theme-toggle');
+            
             if (document.body.classList.contains('light-theme')) {
                 themeToggle.textContent = 'Tema Oscuro';
+                codeEditor.setOption("theme", "eclipse");
                 // Guardar preferencia
                 localStorage.setItem('theme', 'light');
             } else {
                 themeToggle.textContent = 'Tema Claro';
+                codeEditor.setOption("theme", "dracula");
                 // Guardar preferencia
                 localStorage.setItem('theme', 'dark');
             }
-            // Volver a resaltar la sintaxis para aplicar los colores del tema
-            resaltarSintaxis();
         }
 
         // Cargar preferencia de tema al iniciar y inicializar la ciudad
@@ -599,16 +606,19 @@ mientras True:
                 togglePanelContent();
             }
             
-            // Inicializar números de línea y estadísticas
-            updateLineNumbers();
-            updateCursorPosition();
-            
             // Inicializar la ciudad
             inicializarCiudad();
             
             // Actualizar el valor del zoom
             actualizarZoom();
             
-            // Aplicar resaltado de sintaxis inicial
-            resaltarSintaxis();
+            // Inicializar el editor
+            inicializarEditor();
+            
+            // Aplicar el tema correcto al editor
+            if (savedTheme === 'light') {
+                codeEditor.setOption("theme", "eclipse");
+            } else {
+                codeEditor.setOption("theme", "dracula");
+            }
         });

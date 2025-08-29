@@ -679,27 +679,13 @@
             color: #999;
         }
 
-        .SeccionCodigo {
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-            border: none;
-            padding: 10px;
+        /* Estilos para CodeMirror */
+        .CodeMirror {
             flex: 1;
-            resize: none;
+            height: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
             font-size: 15px;
             line-height: 1.5;
-            tab-size: 4;
-            -moz-tab-size: 4;
-            white-space: pre;
-            overflow: auto;
-            transition: background-color 0.3s, color 0.3s;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-        }
-
-        .light-theme .SeccionCodigo {
-            background-color: white;
-            color: #333;
-            border: 1px solid #e0e0e0;
         }
 
         /* Barra de estado - MODIFICADA para acoplarse al editor */
@@ -827,46 +813,47 @@
         }
 
         /* Tema oscuro para resaltado de sintaxis */
-        .keyword {
-            color: #569cd6; /* Azul para palabras clave */
+        .cm-keyword {
+            color: #569cd6 !important; /* Azul para palabras clave */
             font-weight: bold;
         }
 
-        .comment {
-            color: #6a9955; /* Verde para comentarios */
+        .cm-comment {
+            color: #6a9955 !important; /* Verde para comentarios */
             font-style: italic;
         }
 
-        .string {
-            color: #ce9178; /* Naranja para strings */
+        .cm-string {
+            color: #ce9178 !important; /* Naranja para strings */
         }
 
-        .function {
-            color: #dcdcaa; /* Amarillo para funciones */
+        .cm-number {
+            color: #b5cea8 !important; /* Verde claro para números */
         }
 
-        .number {
-            color: #b5cea8; /* Verde claro para números */
+        .cm-builtin {
+            color: #dcdcaa !important; /* Amarillo para funciones */
         }
 
-        .light-theme .keyword {
-            color: #056bd6;
+        /* Tema claro para resaltado de sintaxis */
+        .light-theme .cm-keyword {
+            color: #056bd6 !important;
         }
 
-        .light-theme .string {
-            color: #a31515;
+        .light-theme .cm-string {
+            color: #a31515 !important;
         }
 
-        .light-theme .comment {
-            color: #008000;
+        .light-theme .cm-comment {
+            color: #008000 !important;
         }
 
-        .light-theme .function {
-            color: #795e26;
+        .light-theme .cm-builtin {
+            color: #795e26 !important;
         }
 
-        .light-theme .number {
-            color: #098658;
+        .light-theme .cm-number {
+            color: #098658 !important;
         }
 
         /* Scrollbar personalizado */
