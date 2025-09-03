@@ -34,8 +34,10 @@
         let codeEditor; // Variable global para el editor CodeMirror
 
         // Palabras clave de R-Info para resaltar (instrucciones de control)
-        const rinfoKeywords = ['si', 'sino', 'mientras', 'repetir', 'romper', 'continuar', 'retornar', 'funcion'];
-        const rinfoBuiltins = ['mover', 'recoger', 'dejar', 'sensar', 'hay_objeto'];
+        const rinfoKeywords = ['si', 'sino', 'mientras', 'repetir'];
+        const rinfoBuiltins = ['mover', 'tomarFlor','tomarPapel', 'depositarFlor', 'depositarPapel','Pos','Informar','EnviarMensaje','RecibirMensaje','Random'];
+        const rinfoSections = ['programa','procesos','proceso','areas','robots','variables','comenzar','fin'];
+        const rinfoDeclaratives = ['robot','numero','booleano'];
 
         // Definir un modo personalizado para R-Info
         CodeMirror.defineMode("rinfo", function(config, parserConfig) {
@@ -44,23 +46,42 @@
                     return {
                         inString: false,
                         stringType: null,
-                        inComment: false
+                        inComment: false,
+                        inBraceComment: false
                     };
                 },
                 token: function(stream, state) {
                     // Comentarios
-                    if (state.inComment) {
-                        if (stream.match(/^.*$/)) {
-                            state.inComment = false;
-                        } else {
-                            stream.skipToEnd();
-                        }
+                    
+                    // 1. Detectar apertura de comentario con {
+                    if (!state.inString && !state.inComment && !state.inBraceComment && stream.match(/^{/)) {
+                        state.inBraceComment = true;
                         return "comment";
                     }
                     
-                    if (stream.match(/^#.*/)) {
-                        stream.skipToEnd();
+                    // 2. Detectar cierre de comentario con }
+                    if (state.inBraceComment && stream.match(/^}/)) {
+                        state.inBraceComment = false;
                         return "comment";
+                    }
+                    
+                    // 3. Si estamos dentro de un comentario de llaves, todo es comentario
+                    if (state.inBraceComment) {
+                        // Buscar cualquier ocurrencia de } incluso si tiene caracteres alrededor
+                        let index = stream.string.indexOf('}', stream.pos);
+                        
+                        if (index !== -1) {
+                            // Avanzar hasta la posición de la llave de cierre
+                            stream.pos = index;
+                            // Consumir la llave de cierre
+                            stream.next();
+                            state.inBraceComment = false;
+                            return "comment";
+                        } else {
+                            // Si no encuentra llave de cierre, consumir hasta el final
+                            stream.skipToEnd();
+                            return "comment";
+                        }
                     }
                     
                     // Strings
@@ -109,11 +130,12 @@
                         const word = stream.current();
                         if (rinfoKeywords.includes(word)) return "keyword";
                         if (rinfoBuiltins.includes(word)) return "builtin";
+                        if (rinfoSections.includes(word)) return "section";
                         return "variable";
                     }
                     
                     // Operadores
-                    if (stream.match(/^[+\-*/%=&|<>!?:.,;{}[\]()]/)) return "operator";
+                    if (stream.match(/^[+~\-*/%=&|<>!?:.,;{}[\]()]/)) return "operator";
                     
                     // Avanzar stream
                     stream.next();

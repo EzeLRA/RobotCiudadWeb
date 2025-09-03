@@ -832,10 +832,25 @@
         }
 
         .cm-builtin {
-            color: #dcdcaa !important; /* Amarillo para funciones */
+            color: #FF8E1A !important; /* Amarillo para funciones */
+        }
+
+        .cm-section {
+            color: #FF1A1A !important; /* Rojo para las secciones */
+        }
+
+        /* Color blanco para texto común/variables en modo oscuro */
+        .cm-variable {
+            color: #ffffff !important; /* Blanco para texto común */
         }
 
         /* Tema claro para resaltado de sintaxis */
+
+        /* Color negro para texto común/variables en modo claro */
+        .light-theme .cm-variable {
+            color: #000000 !important; /* Negro para texto común en tema claro */
+        }
+
         .light-theme .cm-keyword {
             color: #056bd6 !important;
         }
@@ -849,11 +864,15 @@
         }
 
         .light-theme .cm-builtin {
-            color: #795e26 !important;
+            color: #FF8E1A !important;
         }
 
         .light-theme .cm-number {
             color: #098658 !important;
+        }
+
+        .light-theme .cm-section {
+            color: #FF1A1A !important;
         }
 
         /* Scrollbar personalizado */

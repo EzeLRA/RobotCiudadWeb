@@ -141,31 +141,32 @@
                 </div>
                 <div class="editor-container" id="editor-container">
                     <div class="line-numbers" id="line-numbers">1</div>
-                    <textarea id="seccionCodigo" style="display: none;"># Bienvenido a R-Info - Lenguaje de programación para robots
-# Las instrucciones de control se resaltan en azul
+                    <textarea id="seccionCodigo" style="display: none;">{Bienvenidos al entorno CMRE.
+Lo siguiente es un código de ejemplo que implementa un
+proceso que recibe un número de avenida como parámetro,
+se posiciona en esa avenida y la recorre.}
 
-# Ejemplo de programa básico
-repetir 3 veces:
-    mover(norte)
-    
-mientras hay_objeto():
-    recoger()
-    mover(este)
-    
-si sensar() == "flores":
-    repetir 5 veces:
-        mover(sur)
-sino:
-    mover(norte)
-    dejar()
-
-# Función para buscar objetos
-mientras True:
-    si hay_objeto():
-        recoger()
-        romper
-    sino:
-        mover(este)</textarea>
+programa ejemplo
+procesos
+  proceso recorrerAvenida(E numAv: numero)
+  comenzar
+    Pos(numAv, 1)
+    repetir 99
+      mover
+  fin
+areas
+  ciudad: AreaC (1,1,100,100)
+robots
+  robot robot1
+  comenzar
+    recorrerAvenida(1)
+  fin
+variables
+  R_info: robot1
+comenzar
+  AsignarArea(R_info, ciudad)
+  Iniciar(R_info, 1,1)
+fin</textarea>
                 </div>
                 <!-- Barra de estado ahora dentro de la sección de código -->
                 <div class="status-bar">
