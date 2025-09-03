@@ -3,7 +3,6 @@
         const cursorPosition = document.getElementById('cursor-position');
         const fileInfo = document.getElementById('file-info');
         const codeStats = document.getElementById('code-stats');
-        const listaObjetos = document.getElementById('lista-objetos');
         const modalAyuda = document.getElementById('modal-ayuda');
         const panelContent = document.getElementById('panel-content');
         const toggleButton = document.getElementById('toggle-button');
@@ -355,24 +354,34 @@
             }
             
             actualizarContadorObjetos();
-            actualizarListaObjetos();
+            actualizarContadoresObjetos();
+        }
+
+        // Función para actualizar los contadores de objetos
+        function actualizarContadoresObjetos() {
+            const contadorFlores = document.getElementById('contador-flores');
+            const contadorPapeles = document.getElementById('contador-papeles');
+            
+            // Contar flores y papeles
+            const flores = objetosCiudad.filter(obj => obj.tipo === 'flores').length;
+            const papeles = objetosCiudad.filter(obj => obj.tipo === 'papeles').length;
+            
+            // Actualizar los contadores
+            contadorFlores.textContent = flores;
+            contadorPapeles.textContent = papeles;
+        }
+
+        // Función para actualizar el valor de velocidad visible
+        function actualizarValorVelocidad() {
+            const velocidadSlider = document.getElementById('velocidad');
+            const valorVelocidad = document.getElementById('valor-velocidad');
+            valorVelocidad.textContent = velocidadSlider.value;
         }
 
         // Actualizar el contador de objetos
         function actualizarContadorObjetos() {
             document.getElementById('contador-objetos').textContent = objetosCiudad.length;
-        }
-
-        // Actualizar la lista de objetos en el panel
-        function actualizarListaObjetos() {
-            const lista = document.getElementById('lista-objetos');
-            lista.innerHTML = '';
-            
-            objetosCiudad.forEach((obj, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `${obj.tipo} (${obj.x}, ${obj.y}) <button onclick="eliminarObjeto(${index})">X</button>`;
-                lista.appendChild(li);
-            });
+            actualizarContadoresObjetos(); // Llamar a la nueva función
         }
 
         // Eliminar un objeto
@@ -383,7 +392,7 @@
             objetosCiudad.splice(index, 1);
             
             actualizarContadorObjetos();
-            actualizarListaObjetos();
+            actualizarContadoresObjetos();
         }
 
         // Mover el robot
@@ -433,41 +442,6 @@
             colocarRobot(nuevaX, nuevaY);
         }
 
-        // Ejecutar el código del robot
-        function ejecutarRobot() {
-            const codigo = codeEditor.getValue();
-            try {
-                // Simular ejecución del código
-                robot.activo = true;
-                actualizarEstadoRobot();
-                
-                // Aquí iría el intérprete real del código R-Info
-                alert("Ejecutando código R-Info del robot...");
-                
-            } catch (error) {
-                alert(`Error en el código: ${error.message}`);
-                robot.activo = false;
-                actualizarEstadoRobot();
-            }
-        }
-
-        // Actualizar el estado del robot en la UI
-        function actualizarEstadoRobot() {
-            const status = document.getElementById('robot-status');
-            status.textContent = `Robot: ${robot.activo ? 'Activo' : 'Inactivo'} | Posición: (${robot.x}, ${robot.y}) | Objeto: ${robot.objeto || 'Ninguno'}`;
-        }
-
-        // Cambiar el tamaño de la ciudad
-        function cambiarTamanoCiudad() {
-            tamañoCiudad = parseInt(document.getElementById('tamano-ciudad').value);
-            inicializarCiudad();
-        }
-
-        // Reiniciar la ciudad
-        function reiniciarCiudad() {
-            inicializarCiudad();
-        }
-
         // Modificar la función agregarObjeto para usar las coordenadas del formulario
         function agregarObjeto() {
             const tipo = document.getElementById('objetosLista').value;
@@ -503,7 +477,42 @@
             }
             
             actualizarContadorObjetos();
-            actualizarListaObjetos();
+            actualizarContadoresObjetos();
+        }
+
+        // Ejecutar el código del robot
+        function ejecutarRobot() {
+            const codigo = codeEditor.getValue();
+            try {
+                // Simular ejecución del código
+                robot.activo = true;
+                actualizarEstadoRobot();
+                
+                // Aquí iría el intérprete real del código R-Info
+                alert("Ejecutando código R-Info del robot...");
+                
+            } catch (error) {
+                alert(`Error en el código: ${error.message}`);
+                robot.activo = false;
+                actualizarEstadoRobot();
+            }
+        }
+
+        // Actualizar el estado del robot en la UI
+        function actualizarEstadoRobot() {
+            const status = document.getElementById('robot-status');
+            status.textContent = `Robot: ${robot.activo ? 'Activo' : 'Inactivo'} | Posición: (${robot.x}, ${robot.y}) | Objeto: ${robot.objeto || 'Ninguno'}`;
+        }
+
+        // Cambiar el tamaño de la ciudad
+        function cambiarTamanoCiudad() {
+            tamañoCiudad = parseInt(document.getElementById('tamano-ciudad').value);
+            inicializarCiudad();
+        }
+
+        // Reiniciar la ciudad
+        function reiniciarCiudad() {
+            inicializarCiudad();
         }
 
         // Actualizar números de línea
@@ -639,6 +648,10 @@
             
             // Inicializar el editor
             inicializarEditor();
+            
+            // Inicializar el control de velocidad
+            actualizarValorVelocidad();
+            document.getElementById('velocidad').addEventListener('input', actualizarValorVelocidad);
             
             // Aplicar el tema correcto al editor
             if (savedTheme === 'light') {

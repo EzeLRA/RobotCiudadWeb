@@ -108,24 +108,19 @@
                         
                         <div class="objetos-agregados">
                             <h4>Objetos en escena:</h4>
-                            <ul id="lista-objetos"></ul>
+                            <div id="contadores-objetos">
+                                <p>Flores: <span id="contador-flores">0</span></p>
+                                <p>Papeles: <span id="contador-papeles">0</span></p>
+                            </div>
                         </div>
                     </div>
                     
                     <div class="controles-robot">
-                        <h3>Controles del Robot</h3>
-                        <div class="direcciones-robot">
-                            <button class="btn-direccion" onclick="moverRobot('arriba')">↑</button>
-                            <div>
-                                <button class="btn-direccion" onclick="moverRobot('izquierda')">←</button>
-                                <button class="btn-direccion" onclick="moverRobot('detener')">■</button>
-                                <button class="btn-direccion" onclick="moverRobot('derecha')">→</button>
-                            </div>
-                            <button class="btn-direccion" onclick="moverRobot('abajo')">↓</button>
-                        </div>
+                        <h3>Velocidad del Robot</h3>
                         <div class="velocidad-robot">
                             <label for="velocidad">Velocidad: </label>
                             <input type="range" id="velocidad" min="1" max="10" value="5">
+                            <span id="valor-velocidad">5</span>
                         </div>
                     </div>
                 </div>
