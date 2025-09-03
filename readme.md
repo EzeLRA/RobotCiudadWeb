@@ -15,6 +15,10 @@ Para poder instalar el proyecto en el escritorio , deberá ejecutar el siguiente
 git clone https://github.com/EzeLRA/RobotCiudadWeb.git
 ```
 
+## Link para acceder a la pagina
+
+https://ezelra.github.io/RobotCiudadWeb/
+
 ## Inspiración
  Este proyecto esta inspirado en otro proyecto bajo la misma idea , siendo este un intento de continuidad del mismo sin correlación con el autor actualmente.\
 [Link del repositorio , aquí](https://github.com/Ationno/R-Info-Web)
