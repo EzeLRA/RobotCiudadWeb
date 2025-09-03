@@ -843,6 +843,13 @@
         .cm-variable {
             color: #ffffff !important; /* Blanco para texto común */
         }
+        .cm-declarative{
+            color: #49F527 !important; 
+        }
+
+        .cm-constans{
+            color: #0DA18B !important;
+        }
 
         /* Tema claro para resaltado de sintaxis */
 
@@ -873,6 +880,14 @@
 
         .light-theme .cm-section {
             color: #FF1A1A !important;
+        }
+
+        .light-theme .cm-declarative{
+            color: #2FD60D !important; 
+        }
+
+        .light-theme .cm-constans{
+            color: #0DA18B !important;
         }
 
         /* Scrollbar personalizado */

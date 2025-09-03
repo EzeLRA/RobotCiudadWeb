@@ -184,7 +184,7 @@ fin</textarea>
             <span class="close" onclick="cerrarModal()">&times;</span>
             <h2>Ayuda del IDE - Lenguaje R-Info</h2>
             <div class="help-content">
-                <h3>Instrucciones de control (resaltadas en azul):</h3>
+                <h3>Instrucciones de control (resaltadas en celeste):</h3>
                 <ul>
                     <li><code class="keyword">si</code> - Condicional if</li>
                     <li><code class="keyword">sino</code> - Condicional else</li>
@@ -194,25 +194,41 @@ fin</textarea>
                 
                 <h3>Funciones disponibles para el robot:</h3>
                 <ul>
-                    <li><code>mover(direccion)</code> - Mueve el robot (norte, sur, este, oeste)</li>
-                    <li><code>recoger()</code> - Recoge un objeto en la posición actual</li>
-                    <li><code>dejar()</code> - Deja un objeto en la posición actual</li>
-                    <li><code>sensar()</code> - Detecta objetos alrededor del robot</li>
-                    <li><code>hay_objeto()</code> - Comprueba si hay un objeto en la posición actual</li>
+                    <li><code>mover</code> - Mueve el robot a la orientacion que apunta</li>
+                    <li><code>Pos()</code> - Posiciona el robot en una ubicacion especifica de la ciudad que le corresponda</li>
+                    <li><code>tomarFlor</code> - Recoge una flor en la posición actual</li>
+                    <li><code>tomarPapel</code> - Recoge un papel en la posición actual</li>
+                    <li><code>depositarFlor</code> - Deposita una flor en la posición actual</li>
+                    <li><code>depositarPapel</code> - Deposita un papel en la posición actual</li>
+                    <li><code>Informar()</code> - Informa en pantalla un dato</li>
+                    <li><code>EnviarMensaje()</code> - Enviar un mensaje a un robot especifico</li>
+                    <li><code>RecibirMensaje()</code> - Recibe un mensaje de un robot especifico</li>
+                </ul>
+
+                <h3>Funciones disponibles del entorno:</h3>
+                <ul>
+                    <li><code>HayFlorEnLaEsquina</code> - Indica con un booleano si en la ubicacion del robot existe por lo menos una flor</li>
+                    <li><code>HayPapelEnLaEsquina</code> - Indica con un booleano si en la ubicacion del robot existe por lo menos un papel</li>
+                    <li><code>HayFlorEnLaBolsa</code> - Indica con un booleano si el robot tiene por lo menos una flor en su bolsa</li>
+                    <li><code>HayPapelEnLaBolsa</code> - Indica con un booleano si el robot tiene por lo menos un papel en su bolsa</li>
+                    <li><code>PosCa</code> - Indica con un numero la ubicacion actual del robot en la calle de la ciudad</li>
+                    <li><code>PosAv</code> - Indica con un numero la ubicacion actual del robot en la avenida de la ciudad</li>
+                    <li><code>Random()</code> - Retorna un numero aleatorio a partir de lo que reciba por parametro</li>
                 </ul>
                 
-                <h3>Ejemplo de código R-Info:</h3>
-                <pre><code># Este es un comentario
-mientras hay_objeto():
-    recoger()
-    mover(este)
-    dejar()
-    
-si sensar() == "flores":
-    repetir 5 veces:
-        mover(norte)
-sino:
-    mover(sur)</code></pre>
+                <h3>Ejemplo de estructura basica de un programa R-Info:</h3>
+                <pre><code>programa
+
+procesos {no es obligatoria su implementacion}
+
+areas
+
+robots
+
+variables
+comenzar
+
+fin</code></pre>
                 
                 <h3>Atajos de teclado:</h3>
                 <ul>

@@ -37,7 +37,8 @@
         const rinfoKeywords = ['si', 'sino', 'mientras', 'repetir'];
         const rinfoBuiltins = ['mover', 'tomarFlor','tomarPapel', 'depositarFlor', 'depositarPapel','Pos','Informar','EnviarMensaje','RecibirMensaje','Random'];
         const rinfoSections = ['programa','procesos','proceso','areas','robots','variables','comenzar','fin'];
-        const rinfoDeclaratives = ['robot','numero','booleano'];
+        const rinfoDeclaratives = ['robot','numero','booleano','AreaC','AreaPC','AreaP','Iniciar','AsignarArea'];
+        const rinfoConstants = ['ES','E','V','F','PosCa','PosAv','HayFlorEnLaEsquina','HayPapelEnLaEsquina','HayFlorEnLaBolsa','HayPapelEnLaBolsa'];
 
         // Definir un modo personalizado para R-Info
         CodeMirror.defineMode("rinfo", function(config, parserConfig) {
@@ -131,6 +132,8 @@
                         if (rinfoKeywords.includes(word)) return "keyword";
                         if (rinfoBuiltins.includes(word)) return "builtin";
                         if (rinfoSections.includes(word)) return "section";
+                        if (rinfoDeclaratives.includes(word)) return "declarative";
+                        if (rinfoConstants.includes(word)) return "constans";
                         return "variable";
                     }
                     
