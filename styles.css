@@ -991,3 +991,28 @@
             border-left: 2px solid #056bd6;
             background-color: rgba(6, 108, 214, 0.15);
         }
+
+        /* Indicador de compilación en el editor-header */
+        .compilation-status {
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .compilation-success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .compilation-error {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .compilation-waiting {
+            background-color: #f39c12;
+            color: white;
+        }

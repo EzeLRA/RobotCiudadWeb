@@ -14,6 +14,7 @@
         const zoomValue = document.getElementById('zoom-value');
         const tamanoActual = document.getElementById('tamano-actual');
         const ventanaPrincipal = document.getElementById('ventana-principal');
+        const editorHeader = document.querySelector('.editor-header span');
 
         // Variables para la ciudad y el robot
         let ciudad = [];
@@ -801,15 +802,124 @@
             updateCodeStats();
         }
 
-        // Función de compilación
+        // Función para mostrar el estado de compilación
+        function mostrarEstadoCompilacion(estado, mensaje) {
+            // Eliminar cualquier estado anterior
+            const estadosAnteriores = document.querySelectorAll('.compilation-status');
+            estadosAnteriores.forEach(el => el.remove());
+            
+            // Crear el nuevo elemento de estado
+            const estadoElement = document.createElement('span');
+            estadoElement.className = `compilation-status compilation-${estado}`;
+            estadoElement.textContent = mensaje;
+            
+            // Insertar después del nombre del archivo
+            editorHeader.parentNode.insertBefore(estadoElement, editorHeader.nextSibling);
+            
+            // Eliminar después de 3 segundos (excepto para errores)
+            if (estado !== 'error') {
+                setTimeout(() => {
+                    if (estadoElement.parentNode) {
+                        estadoElement.parentNode.removeChild(estadoElement);
+                    }
+                }, 3000);
+            }
+        }
+
+        // Función de compilación mejorada
         function compilar() {
             const codigo = codeEditor.getValue();
             console.log('Compilando código R-Info:', codigo);
             
-            // Simular compilación
+            // Mostrar estado de espera
+            mostrarEstadoCompilacion('waiting', 'Compilando...');
+            
+            // Simular compilación con un retraso
             setTimeout(() => {
+                // Verificar si hay comentarios mal formados
+                if (tieneComentariosMalFormados(codigo)) {
+                    mostrarEstadoCompilacion('error', 'Error: Comentarios mal formados');
+                    alert('Error de compilación: Comentarios mal formados. Verifique que todos los comentarios estén correctamente abiertos y cerrados con { }');
+                    return;
+                }
+                
+                // Verificar si hay errores de sintaxis básicos
+                if (tieneErroresSintaxis(codigo)) {
+                    mostrarEstadoCompilacion('error', 'Error: Sintaxis incorrecta');
+                    alert('Error de compilación: Se encontraron errores de sintaxis en el código');
+                    return;
+                }
+                
+                // Si todo está bien, mostrar éxito
+                mostrarEstadoCompilacion('success', 'Compilación exitosa');
                 alert('Compilación completada con éxito');
             }, 1000);
+        }
+
+        // Función para detectar comentarios mal formados
+        function tieneComentariosMalFormados(codigo) {
+            let dentroComentario = false;
+            let linea = 1;
+            let columna = 1;
+            
+            for (let i = 0; i < codigo.length; i++) {
+                const char = codigo[i];
+                
+                if (char === '{' && !dentroComentario) {
+                    // Verificar si hay texto antes del {
+                    if (i > 0 && codigo[i-1].trim() !== '' && codigo[i-1] !== '\n' && codigo[i-1] !== '\r') {
+                        return true; // Texto antes de {
+                    }
+                    dentroComentario = true;
+                } else if (char === '}' && dentroComentario) {
+                    dentroComentario = false;
+                }
+                
+                if (char === '\n') {
+                    linea++;
+                    columna = 1;
+                } else {
+                    columna++;
+                }
+            }
+            
+            // Si terminamos y todavía estamos dentro de un comentario, está mal formado
+            return dentroComentario;
+        }
+
+        // Función para detectar errores de sintaxis básicos
+        function tieneErroresSintaxis(codigo) {
+            // Verificar si hay palabras clave sin cerrar
+            const lineas = codigo.split('\n');
+            
+            // Verificar si hay un "comenzar" sin "fin"
+            const tieneComenzar = codigo.includes('comenzar');
+            const tieneFin = codigo.includes('fin');
+            
+            if (tieneComenzar && !tieneFin) {
+                return true;
+            }
+            
+            // Verificar si hay estructuras de control sin cerrar
+            const estructurasAbiertas = ['si', 'mientras', 'repetir'];
+            const estructurasCerradas = ['sino', 'fsi', 'fmientras', 'frep'];
+            
+            let contadorEstructuras = 0;
+            
+            for (const linea of lineas) {
+                const palabras = linea.trim().split(/\s+/);
+                const primeraPalabra = palabras[0];
+                
+                if (estructurasAbiertas.includes(primeraPalabra)) {
+                    contadorEstructuras++;
+                }
+                
+                if (estructurasCerradas.includes(primeraPalabra)) {
+                    contadorEstructuras--;
+                }
+            }
+            
+            return contadorEstructuras !== 0;
         }
 
         // Función para mostrar ayuda
