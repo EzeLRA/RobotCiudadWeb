@@ -961,3 +961,33 @@
                 min-width: 120px;
             }
         }
+
+        /* Líneas de alcance para estructuras de código */
+        .cm-scope-line {
+            background-color: rgba(86, 156, 214, 0.1);
+            border-left: 2px solid rgba(86, 156, 214, 0.5);
+            margin-left: -6px;
+            padding-left: 4px;
+        }
+
+        .cm-scope-start {
+            border-left: 2px solid #569cd6;
+            background-color: rgba(86, 156, 214, 0.2);
+        }
+
+        .cm-scope-end {
+            border-left: 2px solid #569cd6;
+            background-color: rgba(86, 156, 214, 0.2);
+        }
+
+        /* Ajustes para el tema claro */
+        .light-theme .cm-scope-line {
+            background-color: rgba(6, 108, 214, 0.1);
+            border-left: 2px solid rgba(6, 108, 214, 0.4);
+        }
+
+        .light-theme .cm-scope-start,
+        .light-theme .cm-scope-end {
+            border-left: 2px solid #056bd6;
+            background-color: rgba(6, 108, 214, 0.15);
+        }

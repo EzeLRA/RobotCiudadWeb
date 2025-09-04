@@ -32,6 +32,253 @@
         let panelContenidoMinimizado = false;
         let codeEditor; // Variable global para el editor CodeMirror
 
+        // Variables para el manejo de alcance
+        let scopeMarkers = [];
+
+        // Función para analizar y marcar alcances
+        function analizarYMarcarAlcances() {
+            // Limpiar marcadores anteriores
+            scopeMarkers.forEach(marker => marker.clear());
+            scopeMarkers = [];
+
+            const code = codeEditor.getValue();
+            const lines = code.split('\n');
+            const stack = [];
+            const scopes = [];
+
+            // Identificar estructuras que definen alcances
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // Detectar inicio de alcance
+                if (line.match(/^(proceso|si|mientras|repetir|funcion|inicio|comenzar)\b/)) {
+                    stack.push({ type: line.split(/\s+/)[0], line: i });
+                }
+                // Detectar fin de alcance
+                else if (line.match(/^(fin|sino|fsi|fmientras|frep|ffuncion)\b/) && stack.length > 0) {
+                    const start = stack.pop();
+                    scopes.push({ 
+                        start: start.line, 
+                        end: i, 
+                        type: start.type,
+                        indent: lines[i].search(/\S|$/) // Nivel de indentación
+                    });
+                }
+            }
+
+            // Marcar los alcances en el editor
+            scopes.forEach(scope => {
+                // Marcar línea de inicio
+                scopeMarkers.push(codeEditor.markText(
+                    { line: scope.start, ch: 0 },
+                    { line: scope.start, ch: lines[scope.start].length },
+                    { className: 'cm-scope-start' }
+                ));
+
+                // Marcar línea de fin
+                scopeMarkers.push(codeEditor.markText(
+                    { line: scope.end, ch: 0 },
+                    { line: scope.end, ch: lines[scope.end].length },
+                    { className: 'cm-scope-end' }
+                ));
+
+                // Marcar líneas intermedias
+                for (let i = scope.start + 1; i < scope.end; i++) {
+                    // Solo marcar líneas que estén dentro del mismo nivel de indentación
+                    const currentIndent = lines[i].search(/\S|$/);
+                    if (currentIndent > scope.indent) {
+                        scopeMarkers.push(codeEditor.markText(
+                            { line: i, ch: scope.indent },
+                            { line: i, ch: scope.indent + 1 },
+                            { className: 'cm-scope-line' }
+                        ));
+                    }
+                }
+            });
+        }
+
+        // Función para analizar estructuras de procesos
+        function analizarEstructurasProcesos() {
+            const code = codeEditor.getValue();
+            const lines = code.split('\n');
+            const procesos = [];
+            let currentProceso = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // Detectar inicio de proceso
+                if (line.match(/^proceso\s+\w+/)) {
+                    currentProceso = {
+                        name: line.split(/\s+/)[1],
+                        start: i,
+                        end: -1
+                    };
+                }
+                // Detectar fin de proceso
+                else if (line === 'fin' && currentProceso) {
+                    currentProceso.end = i;
+                    procesos.push(currentProceso);
+                    currentProceso = null;
+                }
+            }
+
+            // Marcar procesos
+            procesos.forEach(proceso => {
+                // Marcar línea de inicio del proceso
+                scopeMarkers.push(codeEditor.markText(
+                    { line: proceso.start, ch: 0 },
+                    { line: proceso.start, ch: lines[proceso.start].length },
+                    { className: 'cm-scope-start' }
+                ));
+
+                // Marcar línea de fin del proceso
+                scopeMarkers.push(codeEditor.markText(
+                    { line: proceso.end, ch: 0 },
+                    { line: proceso.end, ch: lines[proceso.end].length },
+                    { className: 'cm-scope-end' }
+                ));
+
+                // Marcar líneas del proceso
+                for (let i = proceso.start + 1; i < proceso.end; i++) {
+                    scopeMarkers.push(codeEditor.markText(
+                        { line: i, ch: 0 },
+                        { line: i, ch: 1 },
+                        { className: 'cm-scope-line' }
+                    ));
+                }
+            });
+        }
+
+        // Función para analizar estructuras de control
+        function analizarEstructurasControl() {
+            const code = codeEditor.getValue();
+            const lines = code.split('\n');
+            
+            // Palabras clave de control
+            const controlKeywords = ['si', 'sino', 'mientras', 'repetir'];
+            const stack = [];
+            const estructuras = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const words = line.split(/\s+/);
+                
+                // Verificar si es una palabra clave de control
+                if (controlKeywords.includes(words[0])) {
+                    stack.push({ 
+                        type: words[0], 
+                        line: i, 
+                        indent: lines[i].search(/\S|$/) 
+                    });
+                }
+                // Detectar fin de estructura (por indentación)
+                else if (stack.length > 0) {
+                    const currentIndent = lines[i].search(/\S|$/);
+                    const lastStructure = stack[stack.length - 1];
+                    
+                    if (currentIndent <= lastStructure.indent && line !== '') {
+                        // Encontramos el fin de la estructura
+                        const start = stack.pop();
+                        estructuras.push({
+                            type: start.type,
+                            start: start.line,
+                            end: i - 1,
+                            indent: start.indent
+                        });
+                    }
+                }
+            }
+
+            // Marcar las estructuras de control
+            estructuras.forEach(estructura => {
+                // Marcar línea de inicio
+                scopeMarkers.push(codeEditor.markText(
+                    { line: estructura.start, ch: 0 },
+                    { line: estructura.start, ch: lines[estructura.start].length },
+                    { className: 'cm-scope-start' }
+                ));
+
+                // Marcar líneas del cuerpo de la estructura
+                for (let i = estructura.start + 1; i <= estructura.end; i++) {
+                    if (lines[i].trim() !== '') {
+                        scopeMarkers.push(codeEditor.markText(
+                            { line: i, ch: estructura.indent },
+                            { line: i, ch: estructura.indent + 1 },
+                            { className: 'cm-scope-line' }
+                        ));
+                    }
+                }
+            });
+        }
+
+        // Modificar la función de inicialización del editor
+        function inicializarEditor() {
+            codeEditor = CodeMirror.fromTextArea(document.getElementById('seccionCodigo'), {
+                mode: "rinfo",
+                theme: "dracula",
+                lineNumbers: false,
+                indentUnit: 4,
+                indentWithTabs: false,
+                lineWrapping: true,
+                autoCloseBrackets: true,
+                matchBrackets: true,
+                extraKeys: {
+                    "Tab": function(cm) {
+                        cm.replaceSelection("    ", "end");
+                    },
+                    "Ctrl-S": function(cm) {
+                        guardarCodigo();
+                    },
+                    "Ctrl-F": function(cm) {
+                        autoFormatear();
+                    },
+                    "Ctrl-/": function(cm) {
+                        toggleComment();
+                    }
+                }
+            });
+            
+            // Configurar el editor
+            codeEditor.setSize("100%", "100%");
+            
+            // Eventos para actualizar interfaz
+            codeEditor.on("change", function() {
+                updateLineNumbers();
+                updateCodeStats();
+                // Analizar y marcar alcances cuando cambia el código
+                setTimeout(analizarAlcances, 100);
+            });
+            
+            codeEditor.on("cursorActivity", function() {
+                updateCursorPosition();
+            });
+            
+            codeEditor.on("scroll", function() {
+                lineNumbers.scrollTop = codeEditor.getScrollInfo().top;
+            });
+            
+            // Inicializar números de línea y estadísticas
+            updateLineNumbers();
+            updateCursorPosition();
+            updateCodeStats();
+            
+            // Analizar alcances iniciales
+            setTimeout(analizarAlcances, 500);
+        }
+
+        // Función principal para analizar todos los alcances
+        function analizarAlcances() {
+            // Limpiar marcadores anteriores
+            scopeMarkers.forEach(marker => marker.clear());
+            scopeMarkers = [];
+            
+            // Analizar diferentes tipos de estructuras
+            analizarYMarcarAlcances();
+            analizarEstructurasProcesos();
+            analizarEstructurasControl();
+        }
+        
         // Palabras clave de R-Info para resaltar (instrucciones de control)
         const rinfoKeywords = ['si', 'sino', 'mientras', 'repetir'];
         const rinfoBuiltins = ['mover', 'tomarFlor','tomarPapel', 'depositarFlor', 'depositarPapel','Pos','Informar','EnviarMensaje','RecibirMensaje','Random'];
