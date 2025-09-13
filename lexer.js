@@ -5,6 +5,9 @@ class Lexer {
         this.line = 1;
         this.column = 1;
         this.tokens = [];
+        this.indentStack = [0]; 
+        this.atLineStart = true; 
+        this.currentIndent = 0;  
     }
 
     tokenize() {
@@ -26,13 +29,43 @@ class Lexer {
                 this.readString(char);
             } else if (this.isOperator(char)) {
                 this.readOperator();
-            } else {
+            } else if (this.atLineStart) {
+                this.handleIndentation();
+            }else{
                 throw new CompilerError(`Carácter inesperado: ${char}`, this.line, this.column);
             }
         }
 
         this.tokens.push({ type: 'EOF', value: '', line: this.line, column: this.column });
         return this.tokens;
+    }
+
+    handleIndentation() {
+        let indent = 0;
+        while (this.position < this.source.length && 
+               this.isWhitespace(this.source[this.position])) {
+            if (this.source[this.position] === ' ') {
+                indent++;
+            } else if (this.source[this.position] === '\t') {
+                indent += 4; // o tu tamaño de tab preferido
+            }
+            this.position++;
+            this.column++;
+        }
+
+        // Lógica para generar tokens INDENT/DEDENT
+        if (indent > this.indentStack[this.indentStack.length - 1]) {
+            this.tokens.push({ type: 'INDENT', value: '', line: this.line, column: 1 });
+            this.indentStack.push(indent);
+        } else if (indent < this.indentStack[this.indentStack.length - 1]) {
+            while (indent < this.indentStack[this.indentStack.length - 1]) {
+                this.tokens.push({ type: 'DEDENT', value: '', line: this.line, column: 1 });
+                this.indentStack.pop();
+            }
+        }
+        
+        this.atLineStart = false;
+        this.currentIndent = indent;
     }
 
     isWhitespace(char) {
@@ -56,6 +89,7 @@ class Lexer {
             if (this.source[this.position] === '\n') {
                 this.line++;
                 this.column = 1;
+                this.atLineStart = true;
             } else {
                 this.column++;
             }
@@ -92,7 +126,12 @@ class Lexer {
             this.column++;
         }
 
-        const keywords = ['si', 'sino', 'minetras', 'repetir', 'proceso', 'variables', 'numero', 'booleano','comenzar','fin','programa','areas'];
+        const keywords = [
+            'si', 'sino', 'mientras', 'repetir', 'proceso', 
+            'variables', 'numero', 'booleano', 'comenzar', 
+            'fin', 'programa', 'areas', 'robots',
+            'V', 'F' 
+        ];
         const type = keywords.includes(value) ? 'KEYWORD' : 'IDENTIFIER';
 
         this.tokens.push({
