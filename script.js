@@ -215,32 +215,37 @@
 
         function compilar() {
             const sourceCode = document.getElementById('seccionCodigo').value;
-        
-            try {
+            alert('ejecutado');
+            
+            try{
                 // 1. Análisis Léxico
                 const lexer = new Lexer(sourceCode);
                 const tokens = lexer.tokenize();
 
                 // 2. Análisis Sintáctico
-                const parser = new Parser(tokens);
-                const ast = parser.parse();
+                alert('2');
+                //const parser = new Parser(tokens);
+                //const ast = parser.parse();
+                
+                /*
 
                 // 3. Análisis Semántico
                 const semanticAnalyzer = new SemanticAnalyzer();
                 const semanticResult = semanticAnalyzer.analyze(ast);
 
                 // Mostrar resultados
-                if (semanticResult.errors.length > 0) {
+                if (semanticResult.errors.length > 0) { 
                     alert('Errores semánticos encontrados:\n' + semanticResult.errors.join('\n'));
                     //displayErrors(semanticResult.errors);
                 } else {
                     //displaySymbolTable(semanticResult.symbolTable);
                     alert('Compilación exitosa sin errores.');
                 }
-
+                */
             } catch (error) {
-                this.handleError(error);
+                alert('Error durante la compilación: ' + error.message);
             }
+
         }
 
         // Modificar la función de inicialización del editor
