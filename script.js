@@ -214,9 +214,9 @@
         }
 
         function compilar() {
-            const sourceCode = document.getElementById('seccionCodigo').value;
-            alert('ejecutado');
-            
+            //const sourceCode = document.getElementById('seccionCodigo').value;
+            const sourceCode = codeEditor.getValue().split('\n');
+
             try{
                 // 1. Análisis Léxico
                 const lexer = new Lexer(sourceCode);

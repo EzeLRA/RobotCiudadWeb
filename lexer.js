@@ -1,3 +1,12 @@
+class CompilerError extends Error {
+    constructor(message, line, column) {
+        super(`${message} (línea ${line}, columna ${column})`);
+        this.name = "CompilerError";
+        this.line = line;
+        this.column = column;
+    }
+}
+
 class Lexer {
     constructor(source) {
         this.source = source;
@@ -19,7 +28,16 @@ class Lexer {
         while (this.position < this.source.length) {
             const char = this.source[this.position];
 
-            if (this.isWhitespace(char)) {
+            if (char === '{') {
+                this.readComment();
+            } else if (char === '\n') {
+                this.line++;
+                this.column = 1;
+                this.position++;
+                this.atLineStart = true;
+            } else if (this.atLineStart) {
+                this.handleIndentation();
+            } else if (this.isWhitespace(char)) {
                 this.skipWhitespace();
             } else if (this.isDigit(char)) {
                 this.readNumber();
@@ -29,10 +47,8 @@ class Lexer {
                 this.readString(char);
             } else if (this.isOperator(char)) {
                 this.readOperator();
-            } else if (this.atLineStart) {
-                this.handleIndentation();
-            }else{
-                throw new CompilerError(`Carácter inesperado: ${char}`, this.line, this.column);
+            } else {
+                throw new CompilerError(`Carácter inesperado: < ${char} >`, this.line, this.column);
             }
         }
 
@@ -42,8 +58,10 @@ class Lexer {
 
     handleIndentation() {
         let indent = 0;
+        let startPos = this.position;
+
         while (this.position < this.source.length && 
-               this.isWhitespace(this.source[this.position])) {
+            (this.source[this.position] === ' ' || this.source[this.position] === '\t')) {
             if (this.source[this.position] === ' ') {
                 indent++;
             } else if (this.source[this.position] === '\t') {
@@ -51,6 +69,12 @@ class Lexer {
             }
             this.position++;
             this.column++;
+        }
+
+        // Si la línea está vacía (solo salto de línea o espacios), no generar tokens
+        if (this.position === startPos || this.source[this.position] === '\n') {
+            this.atLineStart = false;
+            return;
         }
 
         // Lógica para generar tokens INDENT/DEDENT
@@ -200,5 +224,24 @@ class Lexer {
             line: this.line,
             column: this.column - value.length
         });
+    }
+
+    readComment() {
+        this.position++; // Saltar '{'
+        this.column++;
+        while (this.position < this.source.length && this.source[this.position] !== '}') {
+            if (this.source[this.position] === '\n') {
+                this.line++;
+                this.column = 1;
+            } else {
+                this.column++;
+            }
+            this.position++;
+        }
+        if (this.position >= this.source.length) {
+            throw new CompilerError('Comentario sin cerrar', this.line, this.column);
+        }
+        this.position++; // Saltar '}'
+        this.column++;
     }
 }
