@@ -214,16 +214,20 @@
         }
 
         function compilar() {
-            //const sourceCode = document.getElementById('seccionCodigo').value;
-            const sourceCode = codeEditor.getValue().split('\n');
+            const sourceCode = codeEditor.getValue();
 
             try{
                 // 1. Análisis Léxico
                 const lexer = new Lexer(sourceCode);
-                const tokens = lexer.tokenize();
+                const tokens = lexer.tokenize();   
+                
+                let tokenText = tokens.map(token => 
+                `${token.type}: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
+                ).join('\n');
+                alert(tokenText);
 
                 // 2. Análisis Sintáctico
-                alert('2');
+                //alert(tokens);
                 //const parser = new Parser(tokens);
                 //const ast = parser.parse();
                 

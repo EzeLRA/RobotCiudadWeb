@@ -30,7 +30,9 @@ class Lexer {
 
             if (char === '{') {
                 this.readComment();
-            } else if (char === '\n') {
+            }else if(char === '('){
+                this.readParameter();
+            }else if (char === '\n' || char === "") {
                 this.line++;
                 this.column = 1;
                 this.position++;
@@ -105,7 +107,7 @@ class Lexer {
     }
 
     isOperator(char) {
-        return /[+\-*/=<>!&|]/.test(char);
+        return /[+\-*/=:<>!&|]/.test(char);
     }
 
     skipWhitespace() {
@@ -153,9 +155,10 @@ class Lexer {
         const keywords = [
             'si', 'sino', 'mientras', 'repetir', 'proceso', 
             'variables', 'numero', 'booleano', 'comenzar', 
-            'fin', 'programa', 'areas', 'robots',
+            'fin', 'programa','procesos', 'areas', 'robots',
             'V', 'F' 
         ];
+
         const type = keywords.includes(value) ? 'KEYWORD' : 'IDENTIFIER';
 
         this.tokens.push({
@@ -243,5 +246,35 @@ class Lexer {
         }
         this.position++; // Saltar '}'
         this.column++;
+    }
+
+    readParameter() {
+        let value = '';
+        const startLine = this.line;
+        const startColumn = this.column;
+        this.position++; // Saltar '{'
+        this.column++;
+        while (this.position < this.source.length && this.source[this.position] !== ')') {
+            value += this.source[this.position];
+            if (this.source[this.position] === '\n') {
+                this.line++;
+                this.column = 1;
+            } else {
+                this.column++;
+            }
+            this.position++;
+        }
+        if (this.position >= this.source.length) {
+            throw new CompilerError('Parámetro sin cerrar', this.line, this.column);
+        }
+        this.position++; // Saltar '}'
+        this.column++;
+
+        this.tokens.push({
+            type: 'PARAMETER',
+            value: value,
+            line: startLine,
+            column: startColumn
+        });
     }
 }
