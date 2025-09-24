@@ -67,7 +67,13 @@ class Lexer {
             ['AsignarArea', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
             ['AreaC', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
             ['AreaPC', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['AreaP', TOKEN_TYPES.ELEMENTAL_INSTRUCTION]
+            ['AreaP', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['Leer', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['Random' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['BloquearEsquina' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['LiberarEsquina' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['EnviarMensaje' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['RecibirMensaje' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION]
         ]);
 
     }
@@ -259,7 +265,7 @@ class Lexer {
             const nextChar = this.source[this.position];
             const twoCharOp = char + nextChar;
             
-            const doubleOperators = [':=','==', '!=', '<=', '>=', '&&', '||'];
+            const doubleOperators = [':=','==', '<=', '>=', '&', '|','~'];
             if (doubleOperators.includes(twoCharOp)) {
                 value = twoCharOp;
                 this.position++;
