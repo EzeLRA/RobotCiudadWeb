@@ -224,7 +224,8 @@
                 let tokenText = tokens.map(token => 
                 `${token.type}: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
                 ).join('\n');
-                alert(tokenText);
+                //alert(tokenText);
+                console.log(tokenText);
 
                 // 2. Análisis Sintáctico
                 //alert(tokens);

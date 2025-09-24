@@ -7,6 +7,13 @@ class CompilerError extends Error {
     }
 }
 
+const TOKEN_TYPES = {
+    KEYWORD: 'KEYWORD',
+    CONTROL_SENTENCE: 'CONTROL_SENTENCE', 
+    ELEMENTAL_INSTRUCTION: 'ELEMENTAL_INSTRUCTION',
+    IDENTIFIER: 'IDENTIFIER'
+};
+
 class Lexer {
     constructor(source) {
         this.source = source;
@@ -17,6 +24,52 @@ class Lexer {
         this.indentStack = [0]; 
         this.atLineStart = true; 
         this.currentIndent = 0;  
+
+        //Conjunto de palabras claves
+        this.keywordMap = new Map([
+            // Palabras clave básicas
+            ['proceso', TOKEN_TYPES.KEYWORD],
+            ['robot', TOKEN_TYPES.KEYWORD],
+            ['variables', TOKEN_TYPES.KEYWORD],
+            ['numero', TOKEN_TYPES.KEYWORD],
+            ['booleano', TOKEN_TYPES.KEYWORD],
+            ['comenzar', TOKEN_TYPES.KEYWORD],
+            ['fin', TOKEN_TYPES.KEYWORD],
+            ['programa', TOKEN_TYPES.KEYWORD],
+            ['procesos', TOKEN_TYPES.KEYWORD],
+            ['areas', TOKEN_TYPES.KEYWORD],
+            ['robots', TOKEN_TYPES.KEYWORD],
+            ['V', TOKEN_TYPES.KEYWORD],
+            ['F', TOKEN_TYPES.KEYWORD],
+            
+            // Estructuras de control
+            ['si', TOKEN_TYPES.CONTROL_SENTENCE],
+            ['sino', TOKEN_TYPES.CONTROL_SENTENCE],
+            ['mientras', TOKEN_TYPES.CONTROL_SENTENCE],
+            ['repetir', TOKEN_TYPES.CONTROL_SENTENCE],
+            
+            // Instrucciones elementales
+            ['Iniciar', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['derecha', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['mover', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['tomarFlor', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['tomarPapel', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['depositarFlor', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['depositarPapel', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['PosAv', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['PosCa', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['HayFlorEnLaBolsa', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['HayPapelEnLaBolsa', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['HayFlorEnLaEsquina', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['HayPapelEnLaEsquina', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['Pos', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['Informar', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['AsignarArea', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['AreaC', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['AreaPC', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
+            ['AreaP', TOKEN_TYPES.ELEMENTAL_INSTRUCTION]
+        ]);
+
     }
 
     tokenize() {
@@ -107,7 +160,7 @@ class Lexer {
     }
 
     isOperator(char) {
-        return /[+\-*/=:<>!&|]/.test(char);
+        return /[+\-*/:=<>!&|]/.test(char);
     }
 
     skipWhitespace() {
@@ -152,14 +205,7 @@ class Lexer {
             this.column++;
         }
 
-        const keywords = [
-            'si', 'sino', 'mientras', 'repetir', 'proceso', 
-            'variables', 'numero', 'booleano', 'comenzar', 
-            'fin', 'programa','procesos', 'areas', 'robots',
-            'V', 'F' 
-        ];
-
-        const type = keywords.includes(value) ? 'KEYWORD' : 'IDENTIFIER';
+        const type = this.keywordMap.get(value) || TOKEN_TYPES.IDENTIFIER;
 
         this.tokens.push({
             type,
@@ -213,7 +259,7 @@ class Lexer {
             const nextChar = this.source[this.position];
             const twoCharOp = char + nextChar;
             
-            const doubleOperators = ['==', '!=', '<=', '>=', '&&', '||'];
+            const doubleOperators = [':=','==', '!=', '<=', '>=', '&&', '||'];
             if (doubleOperators.includes(twoCharOp)) {
                 value = twoCharOp;
                 this.position++;
