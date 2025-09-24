@@ -224,14 +224,15 @@
                 let tokenText = tokens.map(token => 
                 `${token.type}: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
                 ).join('\n');
-                //alert(tokenText);
+                
                 console.log(tokenText);
 
                 // 2. Análisis Sintáctico
-                //alert(tokens);
-                //const parser = new Parser(tokens);
-                //const ast = parser.parse();
+                const parser = new Parser(tokens);
+                const ast = parser.parse();
                 
+                console.log(ast);
+
                 /*
 
                 // 3. Análisis Semántico

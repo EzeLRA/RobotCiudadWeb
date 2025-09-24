@@ -16,21 +16,24 @@ class Parser {
         
         const body = [];
         
-        // Parsear secciones principales
-        while (!this.isAtEnd()) {
-            if (this.match('KEYWORD', 'areas')) {
-                body.push(this.parseAreas());
-            } else if (this.match('KEYWORD', 'variables')) {
-                body.push(this.parseVariablesSection());
-            } else if (this.match('KEYWORD', 'procesos')) {
+        // Parsear secciones en el orden que aparecen
+        while (!this.isAtEnd() && !this.match('KEYWORD', 'comenzar')) {
+            if (this.match('KEYWORD', 'procesos')) {
                 body.push(this.parseProcesos());
+            } else if (this.match('KEYWORD', 'areas')) {
+                body.push(this.parseAreas());
             } else if (this.match('KEYWORD', 'robots')) {
                 body.push(this.parseRobots());
-            } else if (this.match('KEYWORD', 'comenzar')) {
-                body.push(this.parseMainBlock());
+            } else if (this.match('KEYWORD', 'variables')) {
+                body.push(this.parseVariablesSection());
             } else {
                 this.advance();
             }
+        }
+
+        // Parsear bloque principal
+        if (this.match('KEYWORD', 'comenzar')) {
+            body.push(this.parseMainBlock());
         }
 
         return {
@@ -40,11 +43,67 @@ class Parser {
         };
     }
 
+    parseProcesos() {
+        this.consume('KEYWORD', 'procesos');
+        const procesos = [];
+        
+        // Esperar INDENT después de 'procesos'
+        this.expect('INDENT');
+        
+        while (!this.isAtEnd() && !this.match('DEDENT')) {
+            if (this.match('KEYWORD', 'proceso')) {
+                procesos.push(this.parseProceso());
+            } else {
+                this.advance();
+            }
+        }
+        
+        this.consume('DEDENT'); // Fin de sección procesos
+
+        return {
+            type: 'ProcesosSection',
+            procesos: procesos
+        };
+    }
+
+    parseProceso() {
+        this.consume('KEYWORD', 'proceso');
+        const name = this.consume('IDENTIFIER').value;
+        
+        // Parsear parámetros (ej: "E numAv: numero")
+        const parameters = [];
+        while (this.match('PARAMETER')) {
+            const paramToken = this.consume('PARAMETER');
+            parameters.push(this.parseParameter(paramToken.value));
+        }
+        
+        this.expect('KEYWORD', 'comenzar');
+        const body = this.parseBlock();
+        this.expect('KEYWORD', 'fin');
+
+        return {
+            type: 'Proceso',
+            name: name,
+            parameters: parameters,
+            body: body
+        };
+    }
+
+    parseParameter(paramString) {
+        // Ejemplo: "E numAv: numero" → {direction: 'E', name: 'numAv', type: 'numero'}
+        const parts = paramString.split(' ');
+        return {
+            direction: parts[0], // E = entrada, S = salida, etc.
+            name: parts[1].split(':')[0],
+            type: parts[1].split(':')[1] || 'numero'
+        };
+    }
+
     parseAreas() {
         this.consume('KEYWORD', 'areas');
         const areas = [];
         
-        while (!this.isAtEnd() && !this.isNextKeyword()) {
+        while (!this.isAtEnd() && !this.isNextSection()) {
             if (this.match('IDENTIFIER')) {
                 areas.push(this.parseAreaDefinition());
             } else {
@@ -60,14 +119,52 @@ class Parser {
 
     parseAreaDefinition() {
         const areaName = this.consume('IDENTIFIER').value;
-        this.consume('OPERATOR', '=');
-        const dimensions = this.parseExpression();
-        this.consume('OPERATOR', ';');
-
+        this.consume('OPERATOR', ':');
+        const areaType = this.consume('ELEMENTAL_INSTRUCTION').value; // AreaC, AreaP, etc.
+        const dimensions = this.parseParameterList();
+        
         return {
             type: 'AreaDefinition',
             name: areaName,
+            areaType: areaType,
             dimensions: dimensions
+        };
+    }
+
+    parseRobots() {
+        this.consume('KEYWORD', 'robots');
+        const robots = [];
+        
+        // Esperar INDENT después de 'robots'
+        this.expect('INDENT');
+        
+        while (!this.isAtEnd() && !this.match('DEDENT')) {
+            if (this.match('KEYWORD', 'robot')) {
+                robots.push(this.parseRobot());
+            } else {
+                this.advance();
+            }
+        }
+        
+        this.consume('DEDENT');
+
+        return {
+            type: 'RobotsSection',
+            robots: robots
+        };
+    }
+
+    parseRobot() {
+        this.consume('KEYWORD', 'robot');
+        const name = this.consume('IDENTIFIER').value;
+        this.expect('KEYWORD', 'comenzar');
+        const body = this.parseBlock();
+        this.expect('KEYWORD', 'fin');
+
+        return {
+            type: 'Robot',
+            name: name,
+            body: body
         };
     }
 
@@ -75,7 +172,7 @@ class Parser {
         this.consume('KEYWORD', 'variables');
         const declarations = [];
         
-        while (!this.isAtEnd() && !this.isNextKeyword()) {
+        while (!this.isAtEnd() && !this.isNextSection()) {
             if (this.match('IDENTIFIER')) {
                 declarations.push(this.parseVariableDeclaration());
             } else {
@@ -89,76 +186,15 @@ class Parser {
         };
     }
 
-    parseProcesos() {
-        this.consume('KEYWORD', 'procesos');
-        const procesos = [];
-        
-        while (!this.isAtEnd() && !this.isNextKeyword()) {
-            if (this.match('KEYWORD', 'proceso')) {
-                procesos.push(this.parseProceso());
-            } else {
-                this.advance();
-            }
-        }
-
-        return {
-            type: 'ProcesosSection',
-            procesos: procesos
-        };
-    }
-
-    parseProceso() {
-        this.consume('KEYWORD', 'proceso');
+    parseVariableDeclaration() {
         const name = this.consume('IDENTIFIER').value;
-        this.consume('OPERATOR', '(');
+        this.consume('OPERATOR', ':');
+        const type = this.consume('IDENTIFIER').value; // robot1, numero, etc.
         
-        const params = [];
-        if (!this.match('OPERATOR', ')')) {
-            params.push(this.consume('IDENTIFIER').value);
-            while (this.match('OPERATOR', ',')) {
-                this.consume('OPERATOR', ',');
-                params.push(this.consume('IDENTIFIER').value);
-            }
-        }
-        
-        this.consume('OPERATOR', ')');
-        const body = this.parseBlock();
-
         return {
-            type: 'Proceso',
+            type: 'VariableDeclaration',
             name: name,
-            parameters: params,
-            body: body
-        };
-    }
-
-    parseRobots() {
-        this.consume('KEYWORD', 'robots');
-        const robots = [];
-        
-        while (!this.isAtEnd() && !this.isNextKeyword()) {
-            if (this.match('KEYWORD', 'robot')) {
-                robots.push(this.parseRobot());
-            } else {
-                this.advance();
-            }
-        }
-
-        return {
-            type: 'RobotsSection',
-            robots: robots
-        };
-    }
-
-    parseRobot() {
-        this.consume('KEYWORD', 'robot');
-        const name = this.consume('IDENTIFIER').value;
-        const body = this.parseBlock();
-
-        return {
-            type: 'Robot',
-            name: name,
-            body: body
+            variableType: type
         };
     }
 
@@ -166,7 +202,6 @@ class Parser {
         this.consume('KEYWORD', 'comenzar');
         const body = this.parseBlock();
         this.expect('KEYWORD', 'fin');
-        this.expect('KEYWORD', 'programa');
 
         return {
             type: 'MainBlock',
@@ -186,7 +221,9 @@ class Parser {
                 statements.push(this.parseStatement());
             }
             
-            this.consume('DEDENT');
+            if (this.match('DEDENT')) {
+                this.consume('DEDENT');
+            }
             this.indentLevel--;
         } else {
             // Bloque de una sola línea
@@ -197,61 +234,20 @@ class Parser {
     }
 
     parseStatement() {
-        if (this.match('KEYWORD', 'si')) {
-            return this.parseIfStatement();
-        } else if (this.match('KEYWORD', 'mientras')) {
-            return this.parseWhileStatement();
-        } else if (this.match('KEYWORD', 'repetir')) {
+        if (this.match('CONTROL_SENTENCE', 'repetir')) {
             return this.parseRepeatStatement();
-        } else if (this.match('KEYWORD', 'variables')) {
-            return this.parseVariableDeclaration();
+        } else if (this.match('ELEMENTAL_INSTRUCTION')) {
+            return this.parseElementalInstruction();
         } else if (this.match('IDENTIFIER')) {
-            // Puede ser asignación o llamada a proceso
-            const lookahead = this.tokens[this.position + 1];
-            if (lookahead && lookahead.type === 'OPERATOR' && lookahead.value === '(') {
-                return this.parseProcessCall();
-            } else {
-                return this.parseAssignment();
-            }
+            return this.parseProcessCall();
         } else {
-            throw new Error(`Declaración no esperada: ${this.currentToken.type}`);
+            throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value}"`);
         }
-    }
-
-    parseIfStatement() {
-        this.consume('KEYWORD', 'si');
-        const test = this.parseExpression();
-        const consequent = this.parseBlock();
-        let alternate = null;
-
-        if (this.match('KEYWORD', 'sino')) {
-            this.consume('KEYWORD', 'sino');
-            alternate = this.parseBlock();
-        }
-
-        return {
-            type: 'IfStatement',
-            test: test,
-            consequent: consequent,
-            alternate: alternate
-        };
-    }
-
-    parseWhileStatement() {
-        this.consume('KEYWORD', 'mientras');
-        const test = this.parseExpression();
-        const body = this.parseBlock();
-
-        return {
-            type: 'WhileStatement',
-            test: test,
-            body: body
-        };
     }
 
     parseRepeatStatement() {
-        this.consume('KEYWORD', 'repetir');
-        const count = this.parseExpression();
+        this.consume('CONTROL_SENTENCE', 'repetir');
+        const count = this.consume('NUMBER').value;
         const body = this.parseBlock();
 
         return {
@@ -261,36 +257,64 @@ class Parser {
         };
     }
 
-    parseVariableDeclaration() {
-        this.consume('KEYWORD', 'variables');
-        const declarations = [];
+    parseElementalInstruction() {
+        const instruction = this.consume('ELEMENTAL_INSTRUCTION').value;
+        let parameters = [];
         
-        do {
-            const name = this.consume('IDENTIFIER').value;
-            this.consume('OPERATOR', ':');
-            const type = this.consume('KEYWORD').value; // numero, booleano
-            declarations.push({ name, type });
-            
-            if (this.match('OPERATOR', ';')) break;
-            this.consume('OPERATOR', ',');
-        } while (!this.isAtEnd());
-
-        this.consume('OPERATOR', ';');
+        if (this.match('PARAMETER')) {
+            parameters = this.parseParameterList();
+        }
 
         return {
-            type: 'VariableDeclaration',
-            declarations: declarations
+            type: 'ElementalInstruction',
+            instruction: instruction,
+            parameters: parameters
         };
     }
 
-    // Métodos auxiliares
-    consume(expectedType = null, expectedValue = null) {
-        if (expectedType && this.currentToken.type !== expectedType) {
-            throw new Error(`Se esperaba ${expectedType}, se obtuvo ${this.currentToken.type}`);
+    parseProcessCall() {
+        const processName = this.consume('IDENTIFIER').value;
+        let parameters = [];
+        
+        if (this.match('PARAMETER')) {
+            parameters = this.parseParameterList();
+        }
+
+        return {
+            type: 'ProcessCall',
+            name: processName,
+            parameters: parameters
+        };
+    }
+
+    parseParameterList() {
+        const parameters = [];
+        if (this.match('PARAMETER')) {
+            const paramToken = this.consume('PARAMETER');
+            // Dividir parámetros por comas: "1,1,100,100" → ['1', '1', '100', '100']
+            parameters.push(...paramToken.value.split(',').map(p => p.trim()));
+        }
+        return parameters;
+    }
+
+    // Métodos auxiliares mejorados
+    expect(type, value = null) {
+        if (this.isAtEnd()) {
+            throw new Error(`Se esperaba ${type} pero se alcanzó el final`);
         }
         
-        if (expectedValue && this.currentToken.value !== expectedValue) {
-            throw new Error(`Se esperaba ${expectedValue}, se obtuvo ${this.currentToken.value}`);
+        if (this.currentToken.type !== type) {
+            throw new Error(`Se esperaba ${type}, se obtuvo ${this.currentToken.type} en línea ${this.currentToken.line}`);
+        }
+        
+        if (value !== null && this.currentToken.value !== value) {
+            throw new Error(`Se esperaba "${value}", se obtuvo "${this.currentToken.value}" en línea ${this.currentToken.line}`);
+        }
+    }
+
+    consume(expectedType = null, expectedValue = null) {
+        if (expectedType) {
+            this.expect(expectedType, expectedValue);
         }
 
         const token = this.currentToken;
@@ -303,6 +327,11 @@ class Parser {
         if (this.currentToken.type !== type) return false;
         if (value !== null && this.currentToken.value !== value) return false;
         return true;
+    }
+
+    isNextSection() {
+        const nextTokens = ['procesos', 'areas', 'robots', 'variables', 'comenzar'];
+        return nextTokens.includes(this.currentToken.value);
     }
 
     advance() {
