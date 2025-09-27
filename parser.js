@@ -11,12 +11,27 @@ class Parser {
     }
 
     parseProgram() {
-        this.expect('KEYWORD', 'programa');
+        //Busca si el primer token obtenido por el lexer es "programa" (no puede ser otra instruccion)
+        this.consume('KEYWORD','programa');
+        //Sino hubo errores , procedera en almacenar el nombre del programa
         const programName = this.consume('IDENTIFIER').value;
         
         const body = [];
         
         // Parsear secciones en el orden que aparecen
+        if (this.match('KEYWORD', 'procesos')) {
+            body.push(this.parseProcesos());
+        } 
+        console.log(this.currentToken);
+
+        //console.log(this.currentToken);
+
+        //body.push(this.parseAreas());
+        //body.push(this.parseRobots());
+        //body.push(this.parseVariablesSection());
+        //body.push(this.parseMainBlock());
+
+        /*
         while (!this.isAtEnd() && !this.match('KEYWORD', 'comenzar')) {
             if (this.match('KEYWORD', 'procesos')) {
                 body.push(this.parseProcesos());
@@ -35,6 +50,7 @@ class Parser {
         if (this.match('KEYWORD', 'comenzar')) {
             body.push(this.parseMainBlock());
         }
+        */
 
         return {
             type: 'Program',
@@ -48,7 +64,7 @@ class Parser {
         const procesos = [];
         
         // Esperar INDENT después de 'procesos'
-        this.expect('INDENT');
+        this.consume('INDENT');
         
         while (!this.isAtEnd() && !this.match('DEDENT')) {
             if (this.match('KEYWORD', 'proceso')) {
@@ -77,9 +93,9 @@ class Parser {
             parameters.push(this.parseParameter(paramToken.value));
         }
         
-        this.expect('KEYWORD', 'comenzar');
+        this.consume('KEYWORD', 'comenzar');
         const body = this.parseBlock();
-        this.expect('KEYWORD', 'fin');
+        this.consume('KEYWORD', 'fin');
 
         return {
             type: 'Proceso',
@@ -102,13 +118,20 @@ class Parser {
     parseAreas() {
         this.consume('KEYWORD', 'areas');
         const areas = [];
-        
+        /*
         while (!this.isAtEnd() && !this.isNextSection()) {
             if (this.match('IDENTIFIER')) {
                 areas.push(this.parseAreaDefinition());
             } else {
                 this.advance();
             }
+        }
+        */
+
+        if (this.match('IDENTIFIER')) {
+            areas.push(this.parseAreaDefinition());
+        } else {
+            this.advance();
         }
 
         return {
