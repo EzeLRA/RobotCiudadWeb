@@ -22,35 +22,14 @@ class Parser {
         if (this.match('KEYWORD', 'procesos')) {
             body.push(this.parseProcesos());
         } 
-        console.log(this.currentToken);
+    
+        body.push(this.parseAreas());    
+        
+        body.push(this.parseRobots());
+        
+        body.push(this.parseVariablesSection());
 
-        //console.log(this.currentToken);
-
-        //body.push(this.parseAreas());
-        //body.push(this.parseRobots());
-        //body.push(this.parseVariablesSection());
-        //body.push(this.parseMainBlock());
-
-        /*
-        while (!this.isAtEnd() && !this.match('KEYWORD', 'comenzar')) {
-            if (this.match('KEYWORD', 'procesos')) {
-                body.push(this.parseProcesos());
-            } else if (this.match('KEYWORD', 'areas')) {
-                body.push(this.parseAreas());
-            } else if (this.match('KEYWORD', 'robots')) {
-                body.push(this.parseRobots());
-            } else if (this.match('KEYWORD', 'variables')) {
-                body.push(this.parseVariablesSection());
-            } else {
-                this.advance();
-            }
-        }
-
-        // Parsear bloque principal
-        if (this.match('KEYWORD', 'comenzar')) {
-            body.push(this.parseMainBlock());
-        }
-        */
+        body.push(this.parseMainBlock());
 
         return {
             type: 'Program',
@@ -63,10 +42,7 @@ class Parser {
         this.consume('KEYWORD', 'procesos');
         const procesos = [];
         
-        // Esperar INDENT después de 'procesos'
-        this.consume('INDENT');
-        
-        while (!this.isAtEnd() && !this.match('DEDENT')) {
+        while (!this.isAtEnd() && !this.isNextSection()) {
             if (this.match('KEYWORD', 'proceso')) {
                 procesos.push(this.parseProceso());
             } else {
@@ -74,8 +50,6 @@ class Parser {
             }
         }
         
-        this.consume('DEDENT'); // Fin de sección procesos
-
         return {
             type: 'ProcesosSection',
             procesos: procesos
@@ -85,7 +59,12 @@ class Parser {
     parseProceso() {
         this.consume('KEYWORD', 'proceso');
         const name = this.consume('IDENTIFIER').value;
-        
+        const varDeclarations = [];
+
+        if (this.match('KEYWORD','VARIABLES')) {
+            varDeclarations.push(this.parseVariableDeclaration());
+        }
+
         // Parsear parámetros (ej: "E numAv: numero")
         const parameters = [];
         while (this.match('PARAMETER')) {
@@ -101,6 +80,7 @@ class Parser {
             type: 'Proceso',
             name: name,
             parameters: parameters,
+            variables: varDeclarations,
             body: body
         };
     }
@@ -118,7 +98,7 @@ class Parser {
     parseAreas() {
         this.consume('KEYWORD', 'areas');
         const areas = [];
-        /*
+        
         while (!this.isAtEnd() && !this.isNextSection()) {
             if (this.match('IDENTIFIER')) {
                 areas.push(this.parseAreaDefinition());
@@ -126,14 +106,7 @@ class Parser {
                 this.advance();
             }
         }
-        */
-
-        if (this.match('IDENTIFIER')) {
-            areas.push(this.parseAreaDefinition());
-        } else {
-            this.advance();
-        }
-
+        
         return {
             type: 'AreasSection',
             areas: areas
@@ -158,10 +131,7 @@ class Parser {
         this.consume('KEYWORD', 'robots');
         const robots = [];
         
-        // Esperar INDENT después de 'robots'
-        this.expect('INDENT');
-        
-        while (!this.isAtEnd() && !this.match('DEDENT')) {
+        while (!this.isAtEnd() && !this.isNextSection()) {
             if (this.match('KEYWORD', 'robot')) {
                 robots.push(this.parseRobot());
             } else {
@@ -169,8 +139,6 @@ class Parser {
             }
         }
         
-        this.consume('DEDENT');
-
         return {
             type: 'RobotsSection',
             robots: robots
@@ -180,13 +148,20 @@ class Parser {
     parseRobot() {
         this.consume('KEYWORD', 'robot');
         const name = this.consume('IDENTIFIER').value;
-        this.expect('KEYWORD', 'comenzar');
+        const varDeclarations = [];
+
+        if (this.match('KEYWORD','VARIABLES')) {
+            varDeclarations.push(this.parseVariableDeclaration());
+        }
+
+        this.consume('KEYWORD', 'comenzar');
         const body = this.parseBlock();
-        this.expect('KEYWORD', 'fin');
+        this.consume('KEYWORD', 'fin');
 
         return {
             type: 'Robot',
             name: name,
+            variables: varDeclarations,
             body: body
         };
     }
@@ -222,9 +197,13 @@ class Parser {
     }
 
     parseMainBlock() {
+        const body = [];
         this.consume('KEYWORD', 'comenzar');
-        const body = this.parseBlock();
-        this.expect('KEYWORD', 'fin');
+        //const body = this.parseBlock();
+        while (!this.isAtEnd() && !this.match('KEYWORD','fin')) {
+            body.push(this.parseStatement());
+        }
+        this.consume('KEYWORD', 'fin');
 
         return {
             type: 'MainBlock',
