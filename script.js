@@ -271,8 +271,8 @@
                     "Ctrl-S": function(cm) {
                         guardarCodigo();
                     },
-                    "Ctrl-F": function(cm) {
-                        autoFormatear();
+                    "Ctrl-O": function(cm) {
+                        cargarCodigo();
                     },
                     "Ctrl-/": function(cm) {
                         toggleComment();
@@ -457,8 +457,8 @@
                     "Ctrl-S": function(cm) {
                         guardarCodigo();
                     },
-                    "Ctrl-F": function(cm) {
-                        autoFormatear();
+                    "Ctrl-O": function(cm) {
+                        cargarCodigo();
                     },
                     "Ctrl-/": function(cm) {
                         toggleComment();
@@ -847,19 +847,191 @@
             // Lógica para avanzar en el programa
         }
 
-        // Función para formatear código
-        function autoFormatear() {
-            // Simular formateo de código
-            alert('Código R-Info formateado');
-        }
 
-        // Función para guardar código
-        function guardarCodigo() {
-            const codigo = codeEditor.getValue();
-            // Simular guardado
-            console.log('Código R-Info guardado:', codigo);
-            alert('Código guardado correctamente');
+// Función para guardar código
+function guardarCodigo() {
+    const codigo = codeEditor.getValue();
+    
+    // Verificar que hay código para guardar
+    if (!codigo.trim()) {
+        alert('No hay código para guardar');
+        return;
+    }
+
+    // Crear elemento de entrada de archivo para obtener nombre
+    const fileName = prompt('Ingrese el nombre del archivo (sin extensión):', 'programa');
+    
+    if (!fileName) {
+        return; // Usuario canceló
+    }
+
+    // Usar la File System Access API si está disponible (navegadores modernos)
+    if ('showSaveFilePicker' in window) {
+        guardarConFileSystemAPI(codigo, fileName);
+    } else {
+        // Fallback para navegadores antiguos
+        guardarConDescarga(codigo, fileName);
+    }
+}
+
+// Método moderno con File System Access API
+async function guardarConFileSystemAPI(codigo, fileName) {
+    try {
+        const options = {
+            suggestedName: `${fileName}.rinfo`,
+            types: [
+                {
+                    description: 'Archivos R-Info',
+                    accept: {
+                        'text/plain': ['.rinfo'],
+                    },
+                },
+            ],
+        };
+
+        const fileHandle = await window.showSaveFilePicker(options);
+        
+        // Crear un FileSystemWritableFileStream para escribir
+        const writableStream = await fileHandle.createWritable();
+        
+        // Escribir el contenido
+        await writableStream.write(codigo);
+        
+        // Cerrar el archivo
+        await writableStream.close();
+        
+        console.log('Archivo R-Info guardado:', fileHandle.name);
+        alert(`Archivo guardado correctamente: ${fileHandle.name}`);
+        
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.error('Error al guardar:', error);
+            alert('Error al guardar el archivo: ' + error.message);
         }
+        // Si es AbortError, el usuario canceló la operación
+    }
+}
+
+// Método de fallback para navegadores antiguos
+function guardarConDescarga(codigo, fileName) {
+    try {
+        // Crear blob con el contenido
+        const blob = new Blob([codigo], { type: 'text/plain' });
+        
+        // Crear URL temporal
+        const url = URL.createObjectURL(blob);
+        
+        // Crear elemento de enlace temporal
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${fileName}.rinfo`;
+        
+        // Simular click para descargar
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Liberar URL
+        URL.revokeObjectURL(url);
+        
+        console.log('Archivo R-Info descargado:', `${fileName}.rinfo`);
+        alert(`Archivo descargado correctamente: ${fileName}.rinfo`);
+        
+    } catch (error) {
+        console.error('Error al descargar:', error);
+        alert('Error al descargar el archivo: ' + error.message);
+    }
+}
+
+// Función adicional para cargar archivos .rinfo
+function cargarCodigo() {
+    if ('showOpenFilePicker' in window) {
+        cargarConFileSystemAPI();
+    } else {
+        cargarConInputArchivo();
+    }
+}
+
+// Cargar archivo con File System Access API
+async function cargarConFileSystemAPI() {
+    try {
+        const [fileHandle] = await window.showOpenFilePicker({
+            types: [
+                {
+                    description: 'Archivos R-Info',
+                    accept: {
+                        'text/plain': ['.rinfo'],
+                    },
+                },
+            ],
+            multiple: false
+        });
+
+        const file = await fileHandle.getFile();
+        const contenido = await file.text();
+        
+        // Cargar el contenido en el editor
+        codeEditor.setValue(contenido);
+        
+        console.log('Archivo cargado:', file.name);
+        alert(`Archivo cargado correctamente: ${file.name}`);
+        
+    } catch (error) {
+        if (error.name !== 'AbortError') {
+            console.error('Error al cargar:', error);
+            alert('Error al cargar el archivo: ' + error.message);
+        }
+    }
+}
+
+// Cargar archivo con input tradicional
+function cargarConInputArchivo() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.rinfo';
+    
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            codeEditor.setValue(e.target.result);
+            console.log('Archivo cargado:', file.name);
+            alert(`Archivo cargado correctamente: ${file.name}`);
+        };
+        
+        reader.onerror = function() {
+            alert('Error al leer el archivo');
+        };
+        
+        reader.readAsText(file);
+    };
+    
+    input.click();
+}
+
+// Función para exportar compilación
+function exportarCompilacion() {
+    const resultado = document.getElementById('resultado-compilacion')?.innerText || 
+                     'No hay resultado de compilación disponible';
+    
+    if (!resultado || resultado === 'No hay resultado de compilación disponible') {
+        alert('No hay resultado de compilación para exportar');
+        return;
+    }
+
+    const contenido = `// Resultado de compilación R-Info\n// Fecha: ${new Date().toLocaleString()}\n\n${resultado}`;
+    const fileName = prompt('Ingrese el nombre para el archivo de compilación:', 'compilacion');
+
+    if (!fileName) return;
+
+    if ('showSaveFilePicker' in window) {
+        guardarConFileSystemAPI(contenido, fileName);
+    } else {
+        guardarConDescarga(contenido, fileName);
+    }
+}
 
         // Función para alternar entre temas claro/oscuro
         function toggleTheme() {
