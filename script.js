@@ -221,19 +221,19 @@
                 const lexer = new Lexer(sourceCode);
                 const tokens = lexer.tokenize();   
                 
+                /* Muestra de tokens
                 let tokenText = tokens.map(token => 
                 `${token.type}: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
                 ).join('\n');
                 
                 console.log(tokenText);
+                */
 
                 // 2. Análisis Sintáctico
                 const parser = new Parser(tokens);
                 const ast = parser.parse();
                 
-                console.log(ast);
-
-                /*
+                //console.log(ast); resultado de parser
 
                 // 3. Análisis Semántico
                 const semanticAnalyzer = new SemanticAnalyzer();
@@ -247,14 +247,13 @@
                     //displaySymbolTable(semanticResult.symbolTable);
                     alert('Compilación exitosa sin errores.');
                 }
-                */
+                
             } catch (error) {
                 alert('Error durante la compilación: ' + error.message);
             }
 
         }
 
-        // Modificar la función de inicialización del editor
         function inicializarEditor() {
             codeEditor = CodeMirror.fromTextArea(document.getElementById('seccionCodigo'), {
                 mode: "rinfo",

@@ -32,6 +32,8 @@ class SemanticAnalyzer {
                 this.visitRobotsSection(section);
             } else if (section.type === 'MainBlock') {
                 this.visitMainBlock(section);
+            } else if (section.type === 'AreasSection') {
+                this.visitAreasSection(section);
             }
         });
         
@@ -40,7 +42,13 @@ class SemanticAnalyzer {
 
     visitVariablesSection(node) {
         node.declarations.forEach(decl => {
-            this.declareVariable(decl.name, decl.type, 'global');
+            this.declareVariable(decl.name, decl.variableType || decl.type, 'global');
+        });
+    }
+
+    visitAreasSection(node) {
+        node.areas.forEach(area => {
+            this.declareVariable(area.name, 'area', 'global');
         });
     }
 
@@ -56,19 +64,18 @@ class SemanticAnalyzer {
         
         // Declarar parámetros
         node.parameters.forEach(param => {
-            this.declareVariable(param, 'numero', `proceso:${node.name}`);
+            const paramName = typeof param === 'string' ? param : param.name;
+            this.declareVariable(paramName, 'numero', `proceso:${node.name}`);
         });
 
         // Analizar cuerpo
-        node.body.forEach(stmt => {
-            this.visitStatement(stmt);
-        });
-        
+        this.visitBlock(node.body);
         this.exitScope();
     }
 
     visitRobotsSection(node) {
         node.robots.forEach(robot => {
+            this.declareVariable(robot.name, 'robot', 'global');
             this.enterScope(`robot:${robot.name}`);
             this.visitBlock(robot.body);
             this.exitScope();
@@ -107,13 +114,27 @@ class SemanticAnalyzer {
             case 'ProcessCall':
                 this.visitProcessCall(node);
                 break;
+            case 'ElementalInstruction':
+                this.visitElementalInstruction(node);
+                break;
+            case 'AreaDefinition':
+                this.visitAreaDefinition(node);
+                break;
+            default:
+                this.errors.push(`Tipo de statement no reconocido: ${node.type}`);
         }
     }
 
     visitVariableDeclaration(node) {
-        node.declarations.forEach(decl => {
-            this.declareVariable(decl.name, decl.type, this.currentScope);
-        });
+        if (node.declarations) {
+            // Formato antiguo: { declarations: [{name, type}] }
+            node.declarations.forEach(decl => {
+                this.declareVariable(decl.name, decl.type, this.currentScope);
+            });
+        } else {
+            // Formato nuevo: { name, variableType }
+            this.declareVariable(node.name, node.variableType, this.currentScope);
+        }
     }
 
     visitIfStatement(node) {
@@ -129,13 +150,41 @@ class SemanticAnalyzer {
         }
     }
 
-    visitAssignment(node) {
-        // Verificar que la variable existe
-        if (!this.lookupVariable(node.left.name)) {
-            this.errors.push(`Variable '${node.left.name}' no declarada`);
+    visitWhileStatement(node) {
+        this.visitExpression(node.test);
+        this.enterScope('while');
+        this.visitBlock(node.body);
+        this.exitScope();
+    }
+
+    visitRepeatStatement(node) {
+        // Verificar que el contador es un número válido
+        if (node.count && node.count.value !== undefined) {
+            if (node.count.value <= 0) {
+                this.errors.push(`El contador de repetición debe ser mayor a 0`);
+            }
         }
         
-        this.visitExpression(node.right);
+        this.enterScope('repeat');
+        this.visitBlock(node.body);
+        this.exitScope();
+    }
+
+    visitAssignment(node) {
+        // Verificar que la variable existe
+        if (node.left && node.left.name) {
+            const variable = this.lookupVariable(node.left.name);
+            if (!variable) {
+                this.errors.push(`Variable '${node.left.name}' no declarada`);
+            } else {
+                // Marcar como inicializada
+                variable.initialized = true;
+            }
+        }
+        
+        if (node.right) {
+            this.visitExpression(node.right);
+        }
     }
 
     visitProcessCall(node) {
@@ -147,26 +196,153 @@ class SemanticAnalyzer {
         }
 
         // Verificar número de parámetros
-        if (node.arguments.length !== process.parameters.length) {
-            this.errors.push(`Número incorrecto de parámetros para '${node.name}'`);
+        const expectedParams = process.parameters ? process.parameters.length : 0;
+        const actualParams = node.parameters ? node.parameters.length : 0;
+        
+        if (actualParams !== expectedParams) {
+            this.errors.push(`Número incorrecto de parámetros para '${node.name}'. Esperados: ${expectedParams}, obtenidos: ${actualParams}`);
         }
 
-        // Verificar cada argumento
-        node.arguments.forEach(arg => {
-            this.visitExpression(arg);
-        });
+        // Verificar cada parámetro
+        if (node.parameters) {
+            node.parameters.forEach((param, index) => {
+                this.visitParameter(param, node.name, index);
+            });
+        }
     }
 
-    // Métodos de utilidad para manejo de ámbitos
+    visitElementalInstruction(node) {
+        // Validar instrucciones elementales del robot
+        const validInstructions = [
+            'Iniciar', 'derecha', 'mover', 'tomarFlor', 'tomarPapel',
+            'depositarFlor', 'depositarPapel', 'PosAv', 'PosCa',
+            'HayFlorEnLaBolsa', 'HayPapelEnLaBolsa', 'HayFlorEnLaEsquina', 
+            'HayPapelEnLaEsquina', 'Pos', 'Informar', 'AsignarArea'
+        ];
+
+        if (!validInstructions.includes(node.instruction)) {
+            this.errors.push(`Instrucción elemental no reconocida: '${node.instruction}'`);
+        }
+
+        // Validar parámetros según la instrucción
+        if (node.parameters) {
+            node.parameters.forEach(param => {
+                this.visitParameter(param, node.instruction);
+            });
+        }
+    }
+
+    visitAreaDefinition(node) {
+        // Validar definición de área
+        const validAreaTypes = ['AreaC', 'AreaPC', 'AreaP'];
+        
+        if (!validAreaTypes.includes(node.areaType)) {
+            this.errors.push(`Tipo de área no reconocido: '${node.areaType}'`);
+        }
+
+        // Validar dimensiones (deben ser 4 números)
+        if (node.dimensions && node.dimensions.length !== 4) {
+            this.errors.push(`El área '${node.name}' debe tener exactamente 4 dimensiones`);
+        }
+
+        if (node.dimensions) {
+            node.dimensions.forEach(dim => {
+                if (isNaN(dim) && !this.lookupVariable(dim)) {
+                    this.errors.push(`Dimensión inválida en área '${node.name}': ${dim}`);
+                }
+            });
+        }
+    }
+
+    visitExpression(node) {
+        if (!node) return;
+        
+        switch (node.type) {
+            case 'Identifier':
+                this.visitIdentifier(node);
+                break;
+            case 'Literal':
+                this.visitLiteral(node);
+                break;
+            case 'BinaryExpression':
+                this.visitBinaryExpression(node);
+                break;
+            case 'UnaryExpression':
+                this.visitUnaryExpression(node);
+                break;
+            default:
+                // Para expresiones simples (números, strings)
+                if (node.value !== undefined) {
+                    this.visitLiteral(node);
+                }
+        }
+    }
+
+    visitIdentifier(node) {
+        const variable = this.lookupVariable(node.name);
+        if (!variable) {
+            this.errors.push(`Variable '${node.name}' no declarada`);
+        } else if (!variable.initialized) {
+            this.errors.push(`Variable '${node.name}' no inicializada`);
+        }
+    }
+
+    visitLiteral(node) {
+        // Los literales no necesitan validación adicional
+        // Pero podemos verificar tipos si es necesario
+        if (node.value === undefined) {
+            this.errors.push(`Literal sin valor`);
+        }
+    }
+
+    visitBinaryExpression(node) {
+        this.visitExpression(node.left);
+        this.visitExpression(node.right);
+        
+        // Validar operadores
+        const validOperators = ['+', '-', '*', '/', '==', '<', '>', '<=', '>=', '&', '|'];
+        if (!validOperators.includes(node.operator)) {
+            this.errors.push(`Operador no válido: '${node.operator}'`);
+        }
+    }
+
+    visitUnaryExpression(node) {
+        this.visitExpression(node.argument);
+        
+        const validOperators = ['-', '~'];
+        if (!validOperators.includes(node.operator)) {
+            this.errors.push(`Operador unario no válido: '${node.operator}'`);
+        }
+    }
+
+    visitParameter(param, context, index = -1) {
+        if (typeof param === 'string') {
+            // Si es un string, puede ser variable o literal
+            if (isNaN(param)) {
+                // Es un identificador/variable
+                const variable = this.lookupVariable(param);
+                if (!variable) {
+                    const contextStr = index >= 0 ? `parámetro ${index + 1} de ${context}` : context;
+                    this.errors.push(`Variable '${param}' no declarada (en ${contextStr})`);
+                }
+            }
+            // Si es número, no necesita validación
+        } else if (typeof param === 'object') {
+            // Si es una expresión compleja
+            this.visitExpression(param);
+        }
+    }
+
     enterScope(scopeName) {
         this.scopeStack.push(new Map());
         this.currentScope = scopeName;
     }
 
     exitScope() {
-        this.scopeStack.pop();
-        this.currentScope = this.scopeStack.length > 0 ? 
-            Array.from(this.scopeStack[this.scopeStack.length - 1].keys())[0] : 'global';
+        if (this.scopeStack.length > 1) {
+            this.scopeStack.pop();
+            this.currentScope = this.scopeStack[this.scopeStack.length - 1].get('_scopeName') || 'global';
+        }
     }
 
     declareVariable(name, type, scope) {
@@ -175,7 +351,16 @@ class SemanticAnalyzer {
         if (currentScope.has(name)) {
             this.errors.push(`Variable '${name}' ya declarada en este ámbito`);
         } else {
-            currentScope.set(name, { type, scope, initialized: false });
+            currentScope.set(name, { 
+                type: type, 
+                scope: scope, 
+                initialized: type !== 'robot' // Los robots se consideran inicializados
+            });
+            
+            // Guardar nombre del scope actual
+            if (!currentScope.has('_scopeName')) {
+                currentScope.set('_scopeName', scope);
+            }
         }
     }
 
@@ -189,9 +374,11 @@ class SemanticAnalyzer {
     }
 
     declareProcess(name, parameters) {
-        // Los procesos van en el ámbito global
         const globalScope = this.scopeStack[0];
-        globalScope.set(`process:${name}`, { parameters });
+        globalScope.set(`process:${name}`, { 
+            parameters: parameters || [],
+            scope: 'global'
+        });
     }
 
     lookupProcess(name) {
@@ -202,12 +389,12 @@ class SemanticAnalyzer {
         const result = [];
         this.scopeStack.forEach((scope, index) => {
             scope.forEach((value, key) => {
-                if (!key.startsWith('process:')) {
+                if (!key.startsWith('process:') && key !== '_scopeName') {
                     result.push({
                         name: key,
                         type: value.type,
                         scope: value.scope,
-                        initialized: value.initialized
+                        initialized: value.initialized || false
                     });
                 }
             });
