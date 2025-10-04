@@ -128,7 +128,10 @@
 
             <section class="VentanaInteraccion" id="editor-section">
                 <div class="editor-header">
-                    <span>robot.r-info</span>
+                    <div class="nombre-programa">
+                        <label for="nombre-programa">Nombre del programa:</label>
+                        <input type="text" id="nombre-programa" value="ejemplo" placeholder="Ingresa el nombre del programa">
+                    </div>
                     <div class="editor-options">
                         <button class="editor-btn" onclick="cargarCodigo()">Importar</button>
                         <button class="editor-btn" onclick="guardarCodigo()">Exportar</button>

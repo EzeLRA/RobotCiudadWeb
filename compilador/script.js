@@ -859,19 +859,23 @@ function guardarCodigo() {
         return;
     }
 
-    // Crear elemento de entrada de archivo para obtener nombre
-    const fileName = prompt('Ingrese el nombre del archivo (sin extensión):', 'programa');
+    // Obtener el nombre personalizado del input
+    const nombreInput = document.getElementById('nombre-programa');
+    const nombrePersonalizado = nombreInput.value.trim() || 'robot';
     
-    if (!fileName) {
-        return; // Usuario canceló
-    }
-
-    // Usar la File System Access API si está disponible (navegadores modernos)
     if ('showSaveFilePicker' in window) {
-        guardarConFileSystemAPI(codigo, fileName);
+        guardarConFileSystemAPI(codigo, nombrePersonalizado);
     } else {
         // Fallback para navegadores antiguos
-        guardarConDescarga(codigo, fileName);
+        guardarConDescarga(codigo, nombrePersonalizado);
+    }
+}
+
+// Función para actualizar el nombre en el header del editor
+function actualizarNombreArchivo(nombre) {
+    const nombreInput = document.getElementById('nombre-programa');
+    if (nombreInput) {
+        nombreInput.value = nombre;
     }
 }
 
@@ -953,7 +957,7 @@ function cargarCodigo() {
     }
 }
 
-// Cargar archivo con File System Access API
+// Función cargarCodigo para actualizar el nombre
 async function cargarConFileSystemAPI() {
     try {
         const [fileHandle] = await window.showOpenFilePicker({
@@ -974,6 +978,10 @@ async function cargarConFileSystemAPI() {
         // Cargar el contenido en el editor
         codeEditor.setValue(contenido);
         
+        // Extraer el nombre del archivo (sin extensión) y actualizar el input
+        const nombreArchivo = file.name.replace('.rinfo', '');
+        actualizarNombreArchivo(nombreArchivo);
+        
         console.log('Archivo cargado:', file.name);
         alert(`Archivo cargado correctamente: ${file.name}`);
         
@@ -985,7 +993,7 @@ async function cargarConFileSystemAPI() {
     }
 }
 
-// Cargar archivo con input tradicional
+// Función de fallback
 function cargarConInputArchivo() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -998,6 +1006,11 @@ function cargarConInputArchivo() {
         const reader = new FileReader();
         reader.onload = function(e) {
             codeEditor.setValue(e.target.result);
+            
+            // Extraer el nombre del archivo y actualizar el input
+            const nombreArchivo = file.name.replace('.rinfo', '');
+            actualizarNombreArchivo(nombreArchivo);
+            
             console.log('Archivo cargado:', file.name);
             alert(`Archivo cargado correctamente: ${file.name}`);
         };
