@@ -61,7 +61,7 @@ class Parser {
         const name = this.consume('IDENTIFIER').value;
         const varDeclarations = [];
 
-        if (this.match('KEYWORD','VARIABLES')) {
+        if (this.match('KEYWORD','variables')) {
             varDeclarations.push(this.parseVariableDeclaration());
         }
 
@@ -236,15 +236,60 @@ class Parser {
     }
 
     parseStatement() {
-        if (this.match('CONTROL_SENTENCE', 'repetir')) {
+        if (this.match('CONTROL_SENTENCE', 'si')) {
+            return this.parseIfStatement();
+        } else if (this.match('CONTROL_SENTENCE', 'mientras')) {
+            return this.parseWhileStatement();
+        } else if (this.match('CONTROL_SENTENCE', 'repetir')) {
             return this.parseRepeatStatement();
         } else if (this.match('ELEMENTAL_INSTRUCTION')) {
             return this.parseElementalInstruction();
         } else if (this.match('IDENTIFIER')) {
             return this.parseProcessCall();
         } else {
-            throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value}"`);
+            throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value} ${this.position} "`);
         }
+    }
+
+    parseIfStatement() {
+        this.consume('CONTROL_SENTENCE', 'si');
+        
+        // Parsear condición (puede ser una expresión simple o compleja)
+        const condition = this.parseCondition();
+        
+        // Parsear bloque THEN
+        const consequent = this.parseBlock();
+        
+        let alternate = null;
+        
+        // Verificar si hay un bloque SINO
+        if (this.match('CONTROL_SENTENCE', 'sino')) {
+            this.consume('CONTROL_SENTENCE', 'sino');
+            alternate = this.parseBlock();
+        }
+
+        return {
+            type: 'IfStatement',
+            condition: condition,
+            consequent: consequent,
+            alternate: alternate
+        };
+    }
+
+    parseWhileStatement() {
+        this.consume('CONTROL_SENTENCE', 'mientras');
+        
+        // Parsear condición
+        const condition = this.parseCondition();
+        
+        // Parsear cuerpo del bucle
+        const body = this.parseBlock();
+
+        return {
+            type: 'WhileStatement',
+            condition: condition,
+            body: body
+        };
     }
 
     parseRepeatStatement() {
@@ -256,6 +301,37 @@ class Parser {
             type: 'RepeatStatement',
             count: count,
             body: body
+        };
+    }
+
+    parseCondition() {
+        // Para condiciones simples, podemos leer hasta el final de línea o parámetro
+        // En una implementación más avanzada, esto sería un parser de expresiones
+        
+        let condition = '';
+        
+        // Leer la condición hasta encontrar un token que indique el fin
+        while (!this.isAtEnd() && 
+               !this.match('INDENT') && 
+               !this.match('CONTROL_SENTENCE') && 
+               !this.match('ELEMENTAL_INSTRUCTION') && 
+               !this.match('IDENTIFIER')) {
+            
+            condition += this.currentToken.value + ' ';
+            this.advance();
+        }
+        
+        // Limpiar espacios extra
+        condition = condition.trim();
+        
+        // Si no hay condición, lanzar error
+        if (!condition) {
+            throw new Error(`Condición esperada después de 'si' o 'mientras'`);
+        }
+        
+        return {
+            type: 'Condition',
+            expression: condition
         };
     }
 

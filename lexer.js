@@ -106,7 +106,7 @@ class Lexer {
                 this.readIdentifier();
             } else if (char === '"' || char === "'") {
                 this.readString(char);
-            } else if (this.isOperator(char)) {
+            } else if (this.isOperator(char)  || char === ',' || char === ':') {
                 this.readOperator();
             } else {
                 throw new CompilerError(`Carácter inesperado: < ${char} >`, this.line, this.column);
@@ -166,7 +166,7 @@ class Lexer {
     }
 
     isOperator(char) {
-        return /[+\-*/:=<>!&|]/.test(char);
+        return /[+\-*/:=<>!&|,:]/.test(char);
     }
 
     skipWhitespace() {
@@ -259,6 +259,17 @@ class Lexer {
         let value = char;
         this.position++;
         this.column++;
+
+        // Si es una coma o dos puntos simples, procesar inmediatamente
+        if (char === ',' || char === ':') {
+            this.tokens.push({
+                type: 'OPERATOR',
+                value,
+                line: this.line,
+                column: this.column - value.length
+            });
+            return;
+        }
 
         // Operadores de dos caracteres
         if (this.position < this.source.length) {
