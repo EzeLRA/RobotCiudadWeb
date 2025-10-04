@@ -61,10 +61,6 @@ class Parser {
         const name = this.consume('IDENTIFIER').value;
         const varDeclarations = [];
 
-        if (this.match('KEYWORD','variables')) {
-            varDeclarations.push(this.parseVariableDeclaration());
-        }
-
         // Parsear parámetros (ej: "E numAv: numero")
         const parameters = [];
         while (this.match('PARAMETER')) {
@@ -72,6 +68,10 @@ class Parser {
             parameters.push(this.parseParameter(paramToken.value));
         }
         
+        if (this.match('KEYWORD','variables')) {
+            varDeclarations.push(this.parseVariablesSection());
+        }
+
         this.consume('KEYWORD', 'comenzar');
         const body = this.parseBlock();
         this.consume('KEYWORD', 'fin');
@@ -187,7 +187,8 @@ class Parser {
     parseVariableDeclaration() {
         const name = this.consume('IDENTIFIER').value;
         this.consume('OPERATOR', ':');
-        const type = this.consume('IDENTIFIER').value; // robot1, numero, etc.
+        
+        const type = this.match('IDENTIFIER') ? this.consume('IDENTIFIER').value : this.consume('KEYWORD').value;
         
         return {
             type: 'VariableDeclaration',
@@ -247,7 +248,7 @@ class Parser {
         } else if (this.match('IDENTIFIER')) {
             return this.parseProcessCall();
         } else {
-            throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value} ${this.position} "`);
+            throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value} ${this.currentToken.line} "`);
         }
     }
 

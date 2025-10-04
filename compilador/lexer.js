@@ -25,22 +25,26 @@ class Lexer {
         this.atLineStart = true; 
         this.currentIndent = 0;  
 
+        //Tipos de datos
+        this.typesDefined = new Map([
+            ['numero', TOKEN_TYPES.IDENTIFIER],
+            ['booleano', TOKEN_TYPES.IDENTIFIER],
+            ['V', TOKEN_TYPES.IDENTIFIER],
+            ['F', TOKEN_TYPES.IDENTIFIER]
+        ])
+
         //Conjunto de palabras claves
         this.keywordMap = new Map([
             // Palabras clave básicas
             ['proceso', TOKEN_TYPES.KEYWORD],
             ['robot', TOKEN_TYPES.KEYWORD],
             ['variables', TOKEN_TYPES.KEYWORD],
-            ['numero', TOKEN_TYPES.KEYWORD],
-            ['booleano', TOKEN_TYPES.KEYWORD],
             ['comenzar', TOKEN_TYPES.KEYWORD],
             ['fin', TOKEN_TYPES.KEYWORD],
             ['programa', TOKEN_TYPES.KEYWORD],
             ['procesos', TOKEN_TYPES.KEYWORD],
             ['areas', TOKEN_TYPES.KEYWORD],
             ['robots', TOKEN_TYPES.KEYWORD],
-            ['V', TOKEN_TYPES.KEYWORD],
-            ['F', TOKEN_TYPES.KEYWORD],
             
             // Estructuras de control
             ['si', TOKEN_TYPES.CONTROL_SENTENCE],
@@ -211,7 +215,7 @@ class Lexer {
             this.column++;
         }
 
-        const type = this.keywordMap.get(value) || TOKEN_TYPES.IDENTIFIER;
+        const type = this.keywordMap.get(value) || this.typesDefined.get(value) || TOKEN_TYPES.IDENTIFIER;
 
         this.tokens.push({
             type,
