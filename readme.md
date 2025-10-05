@@ -25,9 +25,18 @@ https://ezelra.github.io/RobotCiudadWeb/
 ## Inspiración
  Este proyecto esta inspirado en otro proyecto bajo la misma idea , siendo este un intento de continuidad del mismo sin correlación con el autor actualmente.\
 [Link del repositorio , aquí](https://github.com/Ationno/R-Info-Web)
- 
+
+## Documentacion (No oficial)
+ Para mas informacion detallada sobre la sintaxis y estructura del lenguaje de programacion que maneja el entorno de R-Info. Se encuentra disponible el siguiente link no oficial de la Faculta de Informatica de la UNLP:
+[Link de la documentacion](https://rinfounonficialweb.netlify.app/document#estado)
+
 ### Creditos
 + Ationno
++ Theodor
+
 ## Licencia 
 
 [MIT](https://choosealicense.com/licenses/mit/)
+
+## Todos los derechos sobre R-Info se encuentran reservados para:
+© 2025 Copyright [UNLP Facultad de Informatica](https://www.info.unlp.edu.ar/)
