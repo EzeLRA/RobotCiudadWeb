@@ -13,7 +13,7 @@ Es un entorno de programación para aprender las nociones básicas sobre del ár
  Sobre todo que pueda accederse desde cualquier dispositivo que disponga de un navegador web y realizar tareas minimas de forma portatil , siendo como un "Aplicacion de bolsillo".
 
 ## Caracteristicas actuales
-+ Modo Oscuro/Claro habilitados
++ Modo Oscuro/Claro habilitados <span style="color:green">Funcionando</span>
 + Interfaz grafica de "la ciudad" con posibilidad de cambiar su tamaño
 + Compilador funcional
 + Exportar/Importar codigo hecho dentro del apartado
