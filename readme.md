@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/images/robot.png" width="20"></p>
+<p align="center"><img src="assets/images/robot.png" width="80"></p>
 <h1 align="center">R-Info Web</h1>
 
 # Entorno Web de CMRE
