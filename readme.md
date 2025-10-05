@@ -1,3 +1,5 @@
+![Logo del proyecto](assets/images/robot.png)
+
 # Entorno Web de CMRE
 
 Este proyecto es un intento de poder recrear el entorno original de programacion de CMRE o R-Info para un apartado Web con las funciones basicas integradas y la simulacion que representa al robot. 
