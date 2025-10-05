@@ -3,20 +3,49 @@
 
 # Entorno Web de CMRE
 
-Este proyecto es un intento de poder recrear el entorno original de programacion de CMRE o R-Info para un apartado Web con las funciones basicas integradas y la simulacion que representa al robot. 
+Este proyecto es un intento de poder recrear el entorno original de programacion de CMRE o R-Info adaptado a un apartado Web con las funciones basicas integradas y la simulacion que representa al robot. 
 
 ## ¿Que es CMRE?
 Es un entorno de programación para aprender las nociones básicas sobre del área, que a su vez brinda soporte para la enseñanza del paradigma de programación concurrente. Por el cual se ponen en practica los fundamentos necesarios a través del desarrollo de los programas en un entorno simulado para un robot que ejecute el programa elaborado.
 
 ## Finalidad del proyecto
-Como se menciono en un principio , se busca poder recrear el entorno de CMRE para una pagina Web de modo que pueda ser accesible sin la necesidad de dependencias relacionadas con Java(tales como prerrequisitos del compilador u otros) y sobre todo el libre acceso desde cualquier dispositivo que disponga de un navegador.
+ Permitir la accesibilidad sin la necesidad de dependencias relacionadas con la instalacion de la aplicacion oficial en el que esta inspirada en este proyecto(tales como prerrequisitos de Java u otros).
+ Sobre todo que pueda accederse desde cualquier dispositivo que disponga de un navegador web y realizar tareas minimas de forma portatil , siendo como un "Aplicacion de bolsillo".
+
+## Caracteristicas actuales
++ Modo Oscuro/Claro habilitados
++ Interfaz grafica de "la ciudad" con posibilidad de cambiar su tamaño
++ Compilador funcional
++ Exportar/Importar codigo hecho dentro del apartado
++ Interfaz grafica para agregar "items" a "la ciudad"
++ Resaltado de la sintaxis del lenguaje de programacion (R-Info)
++ Guia con informacion sobre la sintaxis y estructura del lenguaje de programacion
+
+## Caracteristicas en desarrollo
++ Robot/s funcional
+
+## Implementaciones a futuro
++ Incorporacion de sonidos
++ Incorporacion de texturas (robot,objetos y ciudad)
++ Ventana extra arriba del mapa de la ciudad indicando en tiempo de ejecucion que instrucciones se estan ejecutando
++ Ventana extra que muestre los robots inicializados con la informacion detallada sobre objetos en bolsa,interacciones en el momento,posicion actual,etc.
++ Visualizacion de las areas declaradas en la ciudad
++ Incorporar mas atajos de teclado
++ Opcion de busqueda de palabras en el codigo
++ Funcion de control del flujo de ejecucion del programa 
 
 ## Instalación
-Para poder instalar el proyecto en el escritorio , deberá ejecutar el siguiente comando a través de la consola de git en una carpeta vacía.
+
+### + Opcion con GIT:
+Puede clonar el proyecto con el siguiente comando y especificando la version del proyecto
 
 ```bash
-git clone https://github.com/EzeLRA/RobotCiudadWeb.git
+git clone "Link del proyecto para la version especifica"
 ```
+
+### + Opcion en GitHub
+Puede instalar el archivo .zip del proyecto desde este repositorio seleccionando la version que este disponible.
+
 
 ## Link para acceder a la pagina
 
@@ -30,7 +59,7 @@ https://ezelra.github.io/RobotCiudadWeb/
  Para mas informacion detallada sobre la sintaxis y estructura del lenguaje de programacion que maneja el entorno de R-Info. Se encuentra disponible el siguiente link no oficial de la Faculta de Informatica de la UNLP:
 [Link de la documentacion](https://rinfounonficialweb.netlify.app/document#estado)
 
-### Creditos
+## Creditos
 + Ationno
 + Theodor
 
