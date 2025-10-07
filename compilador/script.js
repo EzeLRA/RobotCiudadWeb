@@ -242,6 +242,7 @@ function compilar() {
             //displayErrors(semanticResult.errors);
         } else {
             //displaySymbolTable(semanticResult.symbolTable);
+            console.log(semanticResult);
             alert('Compilación exitosa sin errores.');
         }
                 
