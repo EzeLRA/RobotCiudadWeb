@@ -839,13 +839,6 @@ window.addEventListener('click', function(event) {
     }
 });
 
-// Función para avanzar
-function avanzar() {
-    alert('Función de avance activada');
-    // Lógica para avanzar en el programa
-}
-
-
 // Función para guardar código
 function guardarCodigo() {
     const codigo = codeEditor.getValue();

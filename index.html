@@ -15,14 +15,41 @@
     <!-- Barra de navegacion -->
     <nav>
         <button class="BtnNav" onclick="compilar()">Compilar</button>
-        <button class="BtnNav" onclick="mostrarAyuda()">Ayuda</button>
-        <button class="BtnNav" onclick="avanzar()">Avanzar</button>
         <button class="BtnNav" onclick="ejecutarRobot()">Ejecutar Robot</button>
+        <button class="BtnNav" onclick="mostrarAyuda()">Ayuda</button>
         <div class="nav-right">
             <button class="toggle-panel-btn" onclick="togglePanel()" id="toggle-panel-btn">
                 <span>◀</span> Panel
             </button>
-            <button class="BtnNav theme-toggle" onclick="toggleTheme()">Tema Claro</button>
+            <!-- Apartado de mas opciones -->
+            <div class="dropdown">
+                <button class="dropdown-btn" onclick="toggleDropdown()">
+                    Más opciones
+                </button>
+                <div class="dropdown-content" id="myDropdown">
+                    <a href="tester/tester.html">Usar solo el compilador</a>
+                    <a href="#" onclick="toggleTheme()">Cambiar tema</a>
+                    <a href="#">Acerca de</a>
+                </div>
+            </div>
+            <script>
+                function toggleDropdown() {
+                    document.getElementById("myDropdown").classList.toggle("show");
+                }
+                // Cerrar el menú si se hace clic fuera de él
+                window.onclick = function(event) {
+                    if (!event.target.matches('.dropdown-btn')) {
+                        const dropdowns = document.getElementsByClassName("dropdown-content");
+                        for (let i = 0; i < dropdowns.length; i++) {
+                            const openDropdown = dropdowns[i];
+                            if (openDropdown.classList.contains('show')) {
+                                openDropdown.classList.remove('show');
+                            }
+                        }
+                    }
+                }
+            </script>
+            
         </div>
     </nav>
     
@@ -242,6 +269,7 @@ fin</code></pre>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/comment/comment.min.js"></script>
+    <!-- Codigo JS -->
     <script src="./compilador/script.js"></script>
     <script src="./compilador/lexer.js"></script>
     <script src="./compilador/parser.js"></script>
