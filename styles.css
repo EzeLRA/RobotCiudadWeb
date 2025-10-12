@@ -48,6 +48,56 @@ nav {
     gap: 10px;
 }
 
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+        
+.dropdown-btn {
+    background-color: #1177bb;
+    transition: background-color 0.2s;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+}
+        
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 130px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 5px;
+    overflow: hidden;
+    transition: background-color 0.2s;
+}
+        
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    border-bottom: 1px solid #ddd;
+    transition: background-color 0.2s;
+}
+        
+.dropdown-content a:hover {
+    background-color: #f1f1f1;
+    transition: background-color 0.2s;
+}
+        
+.show {
+    display: block;
+}
+        
+.dropdown-btn:hover {
+    background-color: #3e8bbe;
+}
+    
 .BtnNav {
     background-color: #0e639c;
     color: white;
