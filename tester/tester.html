@@ -78,8 +78,8 @@ fin
                         <div class="summary-label">Procesos</div>
                     </div>
                     <div class="summary-item">
-                        <div class="summary-value" id="totalProcessCalls">0</div>
-                        <div class="summary-label">Llamadas</div>
+                        <div class="summary-value" id="totalInstructions">0</div>
+                        <div class="summary-label">Instrucciones</div>
                     </div>
                     <div class="summary-item">
                         <div class="summary-value" id="totalConexiones">0</div>
@@ -123,7 +123,7 @@ fin
             <!-- Llamadas a Procesos -->
             <div class="section">
                 <div class="section-header">
-                    <h2><i>📞</i> Llamadas a Procesos</h2>
+                    <h2><i>📞</i> Cantidad de instrucciones</h2>
                 </div>
                 <div class="process-call-list" id="processCallList">
                     <div class="empty-state">Compile el código para ver las llamadas</div>
@@ -160,6 +160,39 @@ fin
                 </div>
                 <div class="code-block hidden" id="executableCode">
                     <!-- El código ejecutable se mostrará aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="compiler-stages-panel">
+        <div class="panel-header">
+            <h1>Etapas del compilador - Resultados</h1>
+        </div>
+        <div class="panel-content">
+            <!-- Errores de Compilación -->
+            <div class="section executable-section">
+                <div class="section-header">
+                    <h2>Procesador lexico</h2>
+                </div>
+                <div class="lexer-list" id="lexerList">
+                    <div class="empty-state">Sin resultados</div>
+                </div>
+            </div>
+            <div class="section executable-section">
+                <div class="section-header">
+                    <h2>Procesador parser</h2>
+                </div>
+                <div class="parser-list" id="parserList">
+                    <div class="empty-state">Sin resultados</div>
+                </div>
+            </div>
+            <div class="section executable-section">
+                <div class="section-header">
+                    <h2>Procesador semantico</h2>
+                </div>
+                <div class="semantic-list" id="semanticList">
+                    <div class="empty-state">Sin resultados</div>
                 </div>
             </div>
         </div>

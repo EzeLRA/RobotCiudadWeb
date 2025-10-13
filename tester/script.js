@@ -21,12 +21,6 @@ function inicializarEditor() {
             },
             "Ctrl-O": function(cm) {
                 cargarCodigo();
-            },
-            "Ctrl-F": function(cm) {
-                // autoFormatear();
-            },
-            "Ctrl-/": function(cm) {
-                // toggleComment();
             }
         }
     });
@@ -122,124 +116,11 @@ function compilar() {
         } else {
             //displaySymbolTable(semanticResult.symbolTable);
             console.log(semanticResult);
+            console.log(semanticResult.processes); //Contabiliza la cantidad de procesos
+            renderCompilerResults(semanticResult);
             alert('Compilación exitosa sin errores.');
         }
 
-        /*
-        // Por ahora usamos datos de ejemplo
-        const result = {
-            symbolTable: [
-                { name: "R_info", type: "robot1", scope: "global", initialized: true }
-            ],
-            processes: [
-                {
-                    name: "recorrerAvenida",
-                    parameters: [
-                        { direction: "E", name: "numAv", type: "numero" }
-                    ],
-                    variables: [],
-                    bodyStatements: 3,
-                    scope: "proceso:recorrerAvenida"
-                }
-            ],
-            processCalls: [
-                {
-                    name: "recorrerAvenida",
-                    parameters: ["1"],
-                    line: 19,
-                    isValid: true
-                }
-            ],
-            executable: {
-                programa: "ejemplo",
-                areas: [
-                    {
-                        name: "ciudad",
-                        type: "AreaC",
-                        dimensions: ["1", "1", "100", "100"],
-                        bounds: { x1: 1, y1: 1, x2: 100, y2: 100 }
-                    }
-                ],
-                robots: [
-                    {
-                        name: "robot1",
-                        instructions: [
-                            {
-                                type: "process_call",
-                                processName: "recorrerAvenida",
-                                parameters: ["1"],
-                                line: 0
-                            }
-                        ],
-                        position: { x: 0, y: 0 },
-                        direction: "este",
-                        bag: { flores: 0, papeles: 0 },
-                        active: false
-                    }
-                ],
-                procesos: [
-                    {
-                        name: "recorrerAvenida",
-                        parameters: [
-                            { direction: "E", name: "numAv", type: "numero" }
-                        ],
-                        instructions: [
-                            {
-                                type: "instruction",
-                                instruction: "Pos",
-                                parameters: ["numAv", "1"],
-                                line: 0
-                            },
-                            {
-                                type: "repeat",
-                                count: 99,
-                                body: [
-                                    {
-                                        type: "instruction",
-                                        instruction: "mover",
-                                        parameters: [],
-                                        line: 0
-                                    }
-                                ],
-                                line: 0
-                            }
-                        ]
-                    }
-                ],
-                main: [
-                    {
-                        type: "instruction",
-                        instruction: "AsignarArea",
-                        parameters: ["R_info", "ciudad"],
-                        line: 0
-                    },
-                    {
-                        type: "instruction",
-                        instruction: "Iniciar",
-                        parameters: ["R_info", "1", "1"],
-                        line: 0
-                    }
-                ],
-                variables: new Map([
-                    ["R_info", { name: "R_info", type: "robot1", value: null }]
-                ])
-            },
-            errors: [],
-            success: true,
-            summary: {
-                totalProcesses: 1,
-                totalProcessCalls: 1,
-                validProcessCalls: 1,
-                totalErrors: 0,
-                totalVariables: 1,
-                totalRobots: 1,
-                totalAreas: 1
-            }
-        };
-        
-        // Actualizar el panel de resultados
-        updateCompilerResults(result);
-        */
     } catch (error) {
         alert('Error durante la compilación: ' + error.message);
         //updateCompilerResults(errorResult);
@@ -413,50 +294,15 @@ function actualizarNombreArchivo(nombre) {
 
 // Función para renderizar los resultados
 function renderCompilerResults(result) {
-    // Actualizar estado
-    const statusIndicator = document.getElementById('statusIndicator');
-    if (result.success && result.errors.length === 0) {
-        statusIndicator.className = 'status-indicator status-success';
-        statusIndicator.innerHTML = '<div class="status-icon"></div><span>Compilación Exitosa</span>';
-    } else {
-        statusIndicator.className = 'status-indicator status-error';
-        statusIndicator.innerHTML = '<div class="status-icon"></div><span>Errores de Compilación</span>';
-    }
-
     // Actualizar resumen
     document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
-    document.getElementById('totalProcessCalls').textContent = result.summary.totalProcessCalls;
-    document.getElementById('totalVariables').textContent = result.summary.totalVariables;
+    //document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
+    //document.getElementById('totalConexiones').textContent = result.summary.totalConexiones;
+    document.getElementById('totalAreas').textContent = result.summary.totalAreas;
+    document.getElementById('totalRobots').textContent = result.summary.totalRobots;
     document.getElementById('totalErrors').textContent = result.summary.totalErrors;
 
-    // Renderizar procesos
-    const processList = document.getElementById('processList');
-    if (result.processes && result.processes.length > 0) {
-        processList.innerHTML = result.processes.map(process => `
-            <div class="process-item">
-                <div class="process-name">
-                    <i>⚙️</i> ${process.name}
-                </div>
-                <div class="process-details">
-                    <div><strong>Parámetros:</strong> ${process.parameters.length}</div>
-                    <div><strong>Instrucciones:</strong> ${process.bodyStatements}</div>
-                    <div><strong>Ámbito:</strong> ${process.scope}</div>
-                    ${process.parameters.length > 0 ? `
-                        <div class="param-list">
-                            ${process.parameters.map(param => `
-                                <div class="param-item">
-                                    <span>${typeof param === 'string' ? param : param.name}</span>
-                                    <span>${typeof param === 'object' ? param.type : 'numero'}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `).join('');
-    } else {
-        processList.innerHTML = '<div class="empty-state">No se declararon procesos</div>';
-    }
+    /*
 
     // Renderizar llamadas a procesos
     const processCallList = document.getElementById('processCallList');
@@ -536,6 +382,9 @@ function renderCompilerResults(result) {
     } else {
         executableCode.textContent = "No se generó código ejecutable";
     }
+    
+    */
+
 }
 
 // Función para actualizar con nuevos resultados
