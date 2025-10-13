@@ -9,406 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/eclipse.min.css">
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            color: #333;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .compiler-panel {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-
-        .panel-header {
-            background: linear-gradient(135deg, #2c3e50, #4a6491);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .panel-header h1 {
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 500;
-        }
-
-        .status-success {
-            background: rgba(46, 204, 113, 0.2);
-            color: #27ae60;
-            border: 1px solid #27ae60;
-        }
-
-        .status-error {
-            background: rgba(231, 76, 60, 0.2);
-            color: #c0392b;
-            border: 1px solid #c0392b;
-        }
-
-        .status-icon {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .status-success .status-icon {
-            background: #27ae60;
-        }
-
-        .status-error .status-icon {
-            background: #c0392b;
-        }
-
-        .BtnNav {
-            background-color: #0e639c;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.2s;
-            font-weight: 500;
-        }
-
-        .BtnNav:hover {
-            background-color: #1177bb;
-        }
-
-        /* Estilos para el editor */
-        .VentanaPrincipal {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-
-        .VentanaInteraccion {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: #252526;
-            overflow: hidden;
-        }
-
-        .editor-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 20px;
-            background: #2d2d2d;
-            border-bottom: 1px solid #3e3e3e;
-        }
-
-        .nombre-programa {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .nombre-programa label {
-            font-size: 14px;
-            color: #d4d4d4;
-            white-space: nowrap;
-        }
-
-        .nombre-programa input {
-            padding: 6px 10px;
-            border: 1px solid #3e3e3e;
-            border-radius: 4px;
-            font-size: 14px;
-            width: 180px;
-            background: #3c3c3c;
-            color: #d4d4d4;
-        }
-
-        .editor-options {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .editor-btn {
-            background-color: #3c3c3c;
-            color: #d4d4d4;
-            border: 1px solid #3e3e3e;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .editor-btn:hover {
-            background-color: #4c4c4c;
-        }
-
-        .editor-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .line-numbers {
-            background-color: #2d2d2d;
-            color: #858585;
-            padding: 10px 8px;
-            text-align: right;
-            font-size: 14px;
-            line-height: 1.5;
-            user-select: none;
-            overflow: hidden;
-            width: 60px;
-            flex-shrink: 0;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-        }
-
-        .CodeMirror {
-            flex: 1;
-            height: auto !important;
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            font-size: 15px;
-            line-height: 1.5;
-        }
-
-        .status-bar {
-            background-color: #007acc;
-            color: white;
-            padding: 8px 15px;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-        /* Estilos para el panel de resultados */
-        .panel-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 20px;
-            background: #f5f7fa;
-        }
-
-        @media (max-width: 1024px) {
-            .panel-content {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .section {
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e1e5e9;
-        }
-
-        .section h2 {
-            font-size: 18px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e9ecef;
-            color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section h2 i {
-            font-size: 20px;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-
-        .summary-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            text-align: center;
-            border: 1px solid #e9ecef;
-        }
-
-        .summary-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .summary-label {
-            font-size: 14px;
-            color: #6c757d;
-        }
-
-        .process-list, .variable-list, .area-list, .error-list, .process-call-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .process-item, .variable-item, .area-item, .error-item {
-            background: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            border: 1px solid #e9ecef;
-        }
-
-        .process-name, .variable-name, .area-name {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .process-details, .variable-details, .area-details {
-            font-size: 14px;
-            color: #6c757d;
-        }
-
-        .param-list, .dimension-list {
-            margin-top: 8px;
-            padding-left: 20px;
-        }
-
-        .param-item, .dimension-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .param-item:last-child, .dimension-item:last-child {
-            border-bottom: none;
-        }
-
-        .error-item {
-            border-left: 4px solid #e74c3c;
-            background: #fff5f5;
-        }
-
-        .error-message {
-            color: #c0392b;
-            font-weight: 500;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 30px;
-            color: #95a5a6;
-            font-style: italic;
-        }
-
-        .executable-section {
-            grid-column: 1 / -1;
-        }
-
-        .code-block {
-            background: #2c3e50;
-            color: #ecf0f1;
-            padding: 15px;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            max-height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-
-        .toggle-button {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .toggle-button:hover {
-            background: #2980b9;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .process-call-item {
-            background: #f8f9fa;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            border: 1px solid #e9ecef;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .call-valid {
-            border-left: 4px solid #27ae60;
-        }
-
-        .call-invalid {
-            border-left: 4px solid #e74c3c;
-        }
-
-        .valid-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .valid-true {
-            background: rgba(46, 204, 113, 0.2);
-            color: #27ae60;
-        }
-
-        .valid-false {
-            background: rgba(231, 76, 60, 0.2);
-            color: #c0392b;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="compiler-panel">
@@ -416,7 +17,7 @@
             <h1>Compilador R-Info - Entorno de pruebas</h1>
             <div>
                 <button class="BtnNav" onclick="compilar()">Compilar</button>
-                <!-- Agregar boton para regresar a la pagina principal -->
+                <button class="BtnNav" onclick="window.location.href='../index.html'">Regresar</button>
                 <!--
                 <div id="statusIndicator" class="status-indicator status-success">
                     <div class="status-icon"></div>
@@ -441,6 +42,22 @@
                 <div class="editor-container" id="editor-container">
                     <div class="line-numbers" id="line-numbers">1</div>
                     <textarea id="seccionCodigo" style="display: none;">{Bienvenidos al entorno de pruebas del compilador de R-info. Aqui podran poner a prueba todo tipo de codigos hechos con el lenguaje de r-info , para que el compilado del entorno pueda procesarlo y visualizar los aspectos del compilador en parte a su correcto desempeño}
+
+programa ejemplo
+areas
+  ciudad: AreaC (1,1,100,100)
+robots
+  robot robot1
+  comenzar
+    {Codigo principal}
+    mover
+  fin
+variables
+  R_info: robot1
+comenzar
+  AsignarArea(R_info, ciudad)
+  Iniciar(R_info, 1,1)
+fin
 </textarea>
                 </div>
                 <div class="status-bar">
@@ -453,7 +70,7 @@
 
         <div class="panel-content">
             <!-- Resumen General -->
-            <div class="section">
+            <div class="section executable-section">
                 <h2><i>📊</i> Resumen General</h2>
                 <div class="summary-grid">
                     <div class="summary-item">
@@ -461,12 +78,20 @@
                         <div class="summary-label">Procesos</div>
                     </div>
                     <div class="summary-item">
-                        <div class="summary-value" id="totalProcessCalls">0</div>
-                        <div class="summary-label">Llamadas</div>
+                        <div class="summary-value" id="totalInstructions">0</div>
+                        <div class="summary-label">Instrucciones</div>
                     </div>
                     <div class="summary-item">
-                        <div class="summary-value" id="totalVariables">0</div>
-                        <div class="summary-label">Variables</div>
+                        <div class="summary-value" id="totalConexiones">0</div>
+                        <div class="summary-label">Conexiones</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" id="totalAreas">0</div>
+                        <div class="summary-label">Areas</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" id="totalRobots">0</div>
+                        <div class="summary-label">Robots</div>
                     </div>
                     <div class="summary-item">
                         <div class="summary-value" id="totalErrors">0</div>
@@ -475,6 +100,16 @@
                 </div>
             </div>
             
+            <!-- Errores de Compilación -->
+            <div class="section executable-section">
+                <div class="section-header">
+                    <h2><i>❌</i> Errores de Compilación</h2>
+                </div>
+                <div class="error-list" id="errorList">
+                    <div class="empty-state">No hay errores</div>
+                </div>
+            </div>
+
             <!-- Procesos Declarados -->
             <div class="section">
                 <div class="section-header">
@@ -488,7 +123,7 @@
             <!-- Llamadas a Procesos -->
             <div class="section">
                 <div class="section-header">
-                    <h2><i>📞</i> Llamadas a Procesos</h2>
+                    <h2><i>📞</i> Cantidad de instrucciones</h2>
                 </div>
                 <div class="process-call-list" id="processCallList">
                     <div class="empty-state">Compile el código para ver las llamadas</div>
@@ -498,10 +133,10 @@
             <!-- Variables Principales -->
             <div class="section">
                 <div class="section-header">
-                    <h2><i>📝</i> Variables Principales</h2>
+                    <h2><i>📝</i> Conexiones entre robots</h2>
                 </div>
                 <div class="variable-list" id="variableList">
-                    <div class="empty-state">Compile el código para ver las variables</div>
+                    <div class="empty-state">Compile el código para ver las relaciones</div>
                 </div>
             </div>
             
@@ -514,17 +149,7 @@
                     <div class="empty-state">Compile el código para ver las áreas</div>
                 </div>
             </div>
-            
-            <!-- Errores de Compilación -->
-            <div class="section">
-                <div class="section-header">
-                    <h2><i>❌</i> Errores de Compilación</h2>
-                </div>
-                <div class="error-list" id="errorList">
-                    <div class="empty-state">No hay errores</div>
-                </div>
-            </div>
-            
+             
             <!-- Código Ejecutable -->
             <div class="section executable-section">
                 <div class="section-header">
@@ -535,6 +160,39 @@
                 </div>
                 <div class="code-block hidden" id="executableCode">
                     <!-- El código ejecutable se mostrará aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="compiler-stages-panel">
+        <div class="panel-header">
+            <h1>Etapas del compilador - Resultados</h1>
+        </div>
+        <div class="panel-content">
+            <!-- Errores de Compilación -->
+            <div class="section executable-section">
+                <div class="section-header">
+                    <h2>Procesador lexico</h2>
+                </div>
+                <div class="lexer-list" id="lexerList">
+                    <div class="empty-state">Sin resultados</div>
+                </div>
+            </div>
+            <div class="section executable-section">
+                <div class="section-header">
+                    <h2>Procesador parser</h2>
+                </div>
+                <div class="parser-list" id="parserList">
+                    <div class="empty-state">Sin resultados</div>
+                </div>
+            </div>
+            <div class="section executable-section">
+                <div class="section-header">
+                    <h2>Procesador semantico</h2>
+                </div>
+                <div class="semantic-list" id="semanticList">
+                    <div class="empty-state">Sin resultados</div>
                 </div>
             </div>
         </div>
@@ -551,418 +209,7 @@
     <script src="../compilador/parser.js"></script>
     <script src="../compilador/semantic.js"></script>
 
-    <script>
-        // Variables globales
-        let codeEditor;
-
-        // Inicializar CodeMirror
-        function inicializarEditor() {
-            codeEditor = CodeMirror.fromTextArea(document.getElementById('seccionCodigo'), {
-                mode: "rinfo",
-                theme: "dracula",
-                lineNumbers: false,
-                indentUnit: 4,
-                indentWithTabs: false,
-                lineWrapping: true,
-                autoCloseBrackets: true,
-                matchBrackets: true,
-                extraKeys: {
-                    "Tab": function(cm) {
-                        cm.replaceSelection("    ", "end");
-                    },
-                    "Ctrl-S": function(cm) {
-                        guardarCodigo();
-                    },
-                    "Ctrl-O": function(cm) {
-                        cargarCodigo();
-                    },
-                    "Ctrl-F": function(cm) {
-                        // autoFormatear();
-                    },
-                    "Ctrl-/": function(cm) {
-                        // toggleComment();
-                    }
-                }
-            });
-            
-            // Configurar el editor
-            codeEditor.setSize("100%", "100%");
-            
-            // Eventos para actualizar interfaz
-            codeEditor.on("change", function() {
-                updateLineNumbers();
-                updateCodeStats();
-            });
-            
-            codeEditor.on("cursorActivity", function() {
-                updateCursorPosition();
-            });
-            
-            codeEditor.on("scroll", function() {
-                const lineNumbers = document.getElementById('line-numbers');
-                if (lineNumbers) {
-                    lineNumbers.scrollTop = codeEditor.getScrollInfo().top;
-                }
-            });
-            
-            // Inicializar números de línea y estadísticas
-            updateLineNumbers();
-            updateCursorPosition();
-            updateCodeStats();
-        }
-
-        // Funciones auxiliares del editor
-        function updateLineNumbers() {
-            const lineNumbers = document.getElementById('line-numbers');
-            if (!lineNumbers) return;
-            
-            const lineCount = codeEditor.lineCount();
-            let numbers = '';
-            for (let i = 1; i <= lineCount; i++) {
-                numbers += i + '<br>';
-            }
-            lineNumbers.innerHTML = numbers;
-        }
-
-        function updateCodeStats() {
-            const codeStats = document.getElementById('code-stats');
-            if (!codeStats) return;
-            
-            const text = codeEditor.getValue();
-            const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-            const lineCount = codeEditor.lineCount();
-            codeStats.textContent = `${wordCount} palabras, ${lineCount} líneas`;
-        }
-
-        function updateCursorPosition() {
-            const cursorPosition = document.getElementById('cursor-position');
-            if (!cursorPosition) return;
-            
-            const cursor = codeEditor.getCursor();
-            cursorPosition.textContent = `Ln ${cursor.line + 1}, Col ${cursor.ch + 1}`;
-        }
-
-        // Funciones de compilación
-        function compilar() {
-            const sourceCode = codeEditor.getValue();
-            
-            try {
-                // 1. Análisis Léxico
-                const lexer = new Lexer(sourceCode);
-                const tokens = lexer.tokenize();   
-                        
-                //  Muestra de tokens
-                let tokenText = tokens.map(token => 
-                `${token.type}: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
-                ).join('\n');
-                        
-                console.log(tokenText);
-                        
-
-                // 2. Análisis Sintáctico
-                const parser = new Parser(tokens);
-                const ast = parser.parse();
-                        
-                console.log(ast); //resultado de parser
-
-                // 3. Análisis Semántico
-                const semanticAnalyzer = new SemanticAnalyzer();
-                const semanticResult = semanticAnalyzer.analyze(ast);
-                
-                // Mostrar resultados
-                if (semanticResult.errors.length > 0) { 
-                    alert('Errores semánticos encontrados:\n' + semanticResult.errors.join('\n'));
-                    //displayErrors(semanticResult.errors);
-                } else {
-                    //displaySymbolTable(semanticResult.symbolTable);
-                    console.log(semanticResult);
-                    alert('Compilación exitosa sin errores.');
-                }
-
-                /*
-                // Por ahora usamos datos de ejemplo
-                const result = {
-                    symbolTable: [
-                        { name: "R_info", type: "robot1", scope: "global", initialized: true }
-                    ],
-                    processes: [
-                        {
-                            name: "recorrerAvenida",
-                            parameters: [
-                                { direction: "E", name: "numAv", type: "numero" }
-                            ],
-                            variables: [],
-                            bodyStatements: 3,
-                            scope: "proceso:recorrerAvenida"
-                        }
-                    ],
-                    processCalls: [
-                        {
-                            name: "recorrerAvenida",
-                            parameters: ["1"],
-                            line: 19,
-                            isValid: true
-                        }
-                    ],
-                    executable: {
-                        programa: "ejemplo",
-                        areas: [
-                            {
-                                name: "ciudad",
-                                type: "AreaC",
-                                dimensions: ["1", "1", "100", "100"],
-                                bounds: { x1: 1, y1: 1, x2: 100, y2: 100 }
-                            }
-                        ],
-                        robots: [
-                            {
-                                name: "robot1",
-                                instructions: [
-                                    {
-                                        type: "process_call",
-                                        processName: "recorrerAvenida",
-                                        parameters: ["1"],
-                                        line: 0
-                                    }
-                                ],
-                                position: { x: 0, y: 0 },
-                                direction: "este",
-                                bag: { flores: 0, papeles: 0 },
-                                active: false
-                            }
-                        ],
-                        procesos: [
-                            {
-                                name: "recorrerAvenida",
-                                parameters: [
-                                    { direction: "E", name: "numAv", type: "numero" }
-                                ],
-                                instructions: [
-                                    {
-                                        type: "instruction",
-                                        instruction: "Pos",
-                                        parameters: ["numAv", "1"],
-                                        line: 0
-                                    },
-                                    {
-                                        type: "repeat",
-                                        count: 99,
-                                        body: [
-                                            {
-                                                type: "instruction",
-                                                instruction: "mover",
-                                                parameters: [],
-                                                line: 0
-                                            }
-                                        ],
-                                        line: 0
-                                    }
-                                ]
-                            }
-                        ],
-                        main: [
-                            {
-                                type: "instruction",
-                                instruction: "AsignarArea",
-                                parameters: ["R_info", "ciudad"],
-                                line: 0
-                            },
-                            {
-                                type: "instruction",
-                                instruction: "Iniciar",
-                                parameters: ["R_info", "1", "1"],
-                                line: 0
-                            }
-                        ],
-                        variables: new Map([
-                            ["R_info", { name: "R_info", type: "robot1", value: null }]
-                        ])
-                    },
-                    errors: [],
-                    success: true,
-                    summary: {
-                        totalProcesses: 1,
-                        totalProcessCalls: 1,
-                        validProcessCalls: 1,
-                        totalErrors: 0,
-                        totalVariables: 1,
-                        totalRobots: 1,
-                        totalAreas: 1
-                    }
-                };
-                
-                // Actualizar el panel de resultados
-                updateCompilerResults(result);
-                */
-            } catch (error) {
-                alert('Error durante la compilación: ' + error.message);
-                //updateCompilerResults(errorResult);
-            }
-        }
-
-        // Funciones de archivo (placeholders)
-        function guardarCodigo() {
-            const codigo = codeEditor.getValue();
-            const nombre = document.getElementById('nombre-programa').value || 'programa';
-            console.log("Guardando código:", nombre);
-            alert(`Código "${nombre}" listo para guardar (función por implementar)`);
-        }
-
-        function cargarCodigo() {
-            console.log("Cargando código...");
-            alert("Función de cargar código por implementar");
-        }
-
-        // Función para renderizar los resultados
-        function renderCompilerResults(result) {
-            // Actualizar estado
-            const statusIndicator = document.getElementById('statusIndicator');
-            if (result.success && result.errors.length === 0) {
-                statusIndicator.className = 'status-indicator status-success';
-                statusIndicator.innerHTML = '<div class="status-icon"></div><span>Compilación Exitosa</span>';
-            } else {
-                statusIndicator.className = 'status-indicator status-error';
-                statusIndicator.innerHTML = '<div class="status-icon"></div><span>Errores de Compilación</span>';
-            }
-
-            // Actualizar resumen
-            document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
-            document.getElementById('totalProcessCalls').textContent = result.summary.totalProcessCalls;
-            document.getElementById('totalVariables').textContent = result.summary.totalVariables;
-            document.getElementById('totalErrors').textContent = result.summary.totalErrors;
-
-            // Renderizar procesos
-            const processList = document.getElementById('processList');
-            if (result.processes && result.processes.length > 0) {
-                processList.innerHTML = result.processes.map(process => `
-                    <div class="process-item">
-                        <div class="process-name">
-                            <i>⚙️</i> ${process.name}
-                        </div>
-                        <div class="process-details">
-                            <div><strong>Parámetros:</strong> ${process.parameters.length}</div>
-                            <div><strong>Instrucciones:</strong> ${process.bodyStatements}</div>
-                            <div><strong>Ámbito:</strong> ${process.scope}</div>
-                            ${process.parameters.length > 0 ? `
-                                <div class="param-list">
-                                    ${process.parameters.map(param => `
-                                        <div class="param-item">
-                                            <span>${typeof param === 'string' ? param : param.name}</span>
-                                            <span>${typeof param === 'object' ? param.type : 'numero'}</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                processList.innerHTML = '<div class="empty-state">No se declararon procesos</div>';
-            }
-
-            // Renderizar llamadas a procesos
-            const processCallList = document.getElementById('processCallList');
-            if (result.processCalls && result.processCalls.length > 0) {
-                processCallList.innerHTML = result.processCalls.map(call => `
-                    <div class="process-call-item ${call.isValid ? 'call-valid' : 'call-invalid'}">
-                        <div>
-                            <strong>${call.name}</strong>
-                            <div class="process-details">
-                                Parámetros: [${call.parameters.join(', ')}]
-                                ${call.line !== 'desconocida' ? ` • Línea: ${call.line}` : ''}
-                            </div>
-                        </div>
-                        <div class="valid-badge ${call.isValid ? 'valid-true' : 'valid-false'}">
-                            ${call.isValid ? 'Válida' : 'Inválida'}
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                processCallList.innerHTML = '<div class="empty-state">No se realizaron llamadas a procesos</div>';
-            }
-
-            // Renderizar variables
-            const variableList = document.getElementById('variableList');
-            if (result.symbolTable && result.symbolTable.length > 0) {
-                variableList.innerHTML = result.symbolTable.map(variable => `
-                    <div class="variable-item">
-                        <div class="variable-name">
-                            <i>📝</i> ${variable.name}
-                        </div>
-                        <div class="variable-details">
-                            <div><strong>Tipo:</strong> ${variable.type}</div>
-                            <div><strong>Ámbito:</strong> ${variable.scope}</div>
-                            <div><strong>Inicializada:</strong> ${variable.initialized ? 'Sí' : 'No'}</div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                variableList.innerHTML = '<div class="empty-state">No se declararon variables globales</div>';
-            }
-
-            // Renderizar áreas
-            const areaList = document.getElementById('areaList');
-            if (result.executable.areas && result.executable.areas.length > 0) {
-                areaList.innerHTML = result.executable.areas.map(area => `
-                    <div class="area-item">
-                        <div class="area-name">
-                            <i>🗺️</i> ${area.name}
-                        </div>
-                        <div class="area-details">
-                            <div><strong>Tipo:</strong> ${area.type}</div>
-                            <div><strong>Dimensiones:</strong> ${area.dimensions.join(' x ')}</div>
-                            <div><strong>Límites:</strong> (${area.bounds.x1}, ${area.bounds.y1}) a (${area.bounds.x2}, ${area.bounds.y2})</div>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                areaList.innerHTML = '<div class="empty-state">No se declararon áreas</div>';
-            }
-
-            // Renderizar errores
-            const errorList = document.getElementById('errorList');
-            if (result.errors && result.errors.length > 0) {
-                errorList.innerHTML = result.errors.map(error => `
-                    <div class="error-item">
-                        <div class="error-message">${error}</div>
-                    </div>
-                `).join('');
-            } else {
-                errorList.innerHTML = '<div class="empty-state">No se encontraron errores</div>';
-            }
-
-            // Renderizar código ejecutable
-            const executableCode = document.getElementById('executableCode');
-            if (result.executable) {
-                executableCode.textContent = JSON.stringify(result.executable, null, 2);
-            } else {
-                executableCode.textContent = "No se generó código ejecutable";
-            }
-        }
-
-        // Función para actualizar con nuevos resultados
-        function updateCompilerResults(newResult) {
-            renderCompilerResults(newResult);
-        }
-
-        // Inicializar cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', function() {
-            inicializarEditor();
-            
-            // Configurar toggle para código ejecutable
-            document.getElementById('toggleExecutable').addEventListener('click', function() {
-                const codeBlock = document.getElementById('executableCode');
-                const toggleButton = document.getElementById('toggleExecutable');
-                
-                if (codeBlock.classList.contains('hidden')) {
-                    codeBlock.classList.remove('hidden');
-                    toggleButton.innerHTML = '<span>Ocultar</span> <i>▲</i>';
-                } else {
-                    codeBlock.classList.add('hidden');
-                    toggleButton.innerHTML = '<span>Mostrar</span> <i>▼</i>';
-                }
-            });
-        });
-    </script>
+    <script src="./script.js"></script>
+    
 </body>
 </html>
