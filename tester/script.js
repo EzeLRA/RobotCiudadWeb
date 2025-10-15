@@ -1,6 +1,10 @@
 // Variables globales
 let codeEditor;
 
+/*
+    Funciones para inicializar y manejar el editor de código.
+*/
+
 // Inicializar CodeMirror
 function inicializarEditor() {
     codeEditor = CodeMirror.fromTextArea(document.getElementById('seccionCodigo'), {
@@ -81,6 +85,139 @@ function updateCursorPosition() {
     const cursor = codeEditor.getCursor();
     cursorPosition.textContent = `Ln ${cursor.line + 1}, Col ${cursor.ch + 1}`;
 }
+
+// Función para actualizar el nombre en el header del editor
+function actualizarNombreArchivo(nombre) {
+    const nombreInput = document.getElementById('nombre-programa');
+    if (nombreInput) {
+        nombreInput.value = nombre;
+    }
+}
+
+// Funciones para contabilizar instrucciones funcionales (Cuenta las instrucciones que no son comentarios y que son utilizadas para el algoritmo)
+
+// Función para renderizar los resultados
+function renderCompilerResults(result) {
+    // Actualizar resumen
+    document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
+    //document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
+    //document.getElementById('totalConexiones').textContent = result.summary.totalConexiones;
+    document.getElementById('totalAreas').textContent = result.summary.totalAreas;
+    document.getElementById('totalRobots').textContent = result.summary.totalRobots;
+    document.getElementById('totalErrors').textContent = result.summary.totalErrors;
+
+    /*
+
+    // Renderizar llamadas a procesos
+    const processCallList = document.getElementById('processCallList');
+    if (result.processCalls && result.processCalls.length > 0) {
+        processCallList.innerHTML = result.processCalls.map(call => `
+            <div class="process-call-item ${call.isValid ? 'call-valid' : 'call-invalid'}">
+                <div>
+                    <strong>${call.name}</strong>
+                    <div class="process-details">
+                        Parámetros: [${call.parameters.join(', ')}]
+                        ${call.line !== 'desconocida' ? ` • Línea: ${call.line}` : ''}
+                    </div>
+                </div>
+                <div class="valid-badge ${call.isValid ? 'valid-true' : 'valid-false'}">
+                    ${call.isValid ? 'Válida' : 'Inválida'}
+                </div>
+            </div>
+        `).join('');
+    } else {
+        processCallList.innerHTML = '<div class="empty-state">No se realizaron llamadas a procesos</div>';
+    }
+
+    // Renderizar variables
+    const variableList = document.getElementById('variableList');
+    if (result.symbolTable && result.symbolTable.length > 0) {
+        variableList.innerHTML = result.symbolTable.map(variable => `
+            <div class="variable-item">
+                <div class="variable-name">
+                    <i>📝</i> ${variable.name}
+                </div>
+                <div class="variable-details">
+                    <div><strong>Tipo:</strong> ${variable.type}</div>
+                    <div><strong>Ámbito:</strong> ${variable.scope}</div>
+                    <div><strong>Inicializada:</strong> ${variable.initialized ? 'Sí' : 'No'}</div>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        variableList.innerHTML = '<div class="empty-state">No se declararon variables globales</div>';
+    }
+
+    // Renderizar áreas
+    const areaList = document.getElementById('areaList');
+    if (result.executable.areas && result.executable.areas.length > 0) {
+        areaList.innerHTML = result.executable.areas.map(area => `
+            <div class="area-item">
+                <div class="area-name">
+                    <i>🗺️</i> ${area.name}
+                </div>
+                <div class="area-details">
+                    <div><strong>Tipo:</strong> ${area.type}</div>
+                    <div><strong>Dimensiones:</strong> ${area.dimensions.join(' x ')}</div>
+                    <div><strong>Límites:</strong> (${area.bounds.x1}, ${area.bounds.y1}) a (${area.bounds.x2}, ${area.bounds.y2})</div>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        areaList.innerHTML = '<div class="empty-state">No se declararon áreas</div>';
+    }
+
+    // Renderizar errores
+    const errorList = document.getElementById('errorList');
+    if (result.errors && result.errors.length > 0) {
+        errorList.innerHTML = result.errors.map(error => `
+            <div class="error-item">
+                <div class="error-message">${error}</div>
+            </div>
+        `).join('');
+    } else {
+        errorList.innerHTML = '<div class="empty-state">No se encontraron errores</div>';
+    }
+
+    // Renderizar código ejecutable
+    const executableCode = document.getElementById('executableCode');
+    if (result.executable) {
+        executableCode.textContent = JSON.stringify(result.executable, null, 2);
+    } else {
+        executableCode.textContent = "No se generó código ejecutable";
+    }
+    
+    */
+
+}
+
+// Función para actualizar con nuevos resultados
+function updateCompilerResults(newResult) {
+    renderCompilerResults(newResult);
+}
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    inicializarEditor();
+    
+    // Configurar toggle para código ejecutable
+    document.getElementById('toggleExecutable').addEventListener('click', function() {
+        const codeBlock = document.getElementById('executableCode');
+        const toggleButton = document.getElementById('toggleExecutable');
+        
+        if (codeBlock.classList.contains('hidden')) {
+            codeBlock.classList.remove('hidden');
+            toggleButton.innerHTML = '<span>Ocultar</span> <i>▲</i>';
+        } else {
+            codeBlock.classList.add('hidden');
+            toggleButton.innerHTML = '<span>Mostrar</span> <i>▼</i>';
+        }
+    });
+});
+
+/*
+    Funciones de compilación y manejo de archivos.
+*/
 
 // Funciones de compilación
 function compilar() {
@@ -284,129 +421,3 @@ function cargarConInputArchivo() {
     
     input.click();
 }
-// Función para actualizar el nombre en el header del editor
-function actualizarNombreArchivo(nombre) {
-    const nombreInput = document.getElementById('nombre-programa');
-    if (nombreInput) {
-        nombreInput.value = nombre;
-    }
-}
-
-// Función para renderizar los resultados
-function renderCompilerResults(result) {
-    // Actualizar resumen
-    document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
-    //document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
-    //document.getElementById('totalConexiones').textContent = result.summary.totalConexiones;
-    document.getElementById('totalAreas').textContent = result.summary.totalAreas;
-    document.getElementById('totalRobots').textContent = result.summary.totalRobots;
-    document.getElementById('totalErrors').textContent = result.summary.totalErrors;
-
-    /*
-
-    // Renderizar llamadas a procesos
-    const processCallList = document.getElementById('processCallList');
-    if (result.processCalls && result.processCalls.length > 0) {
-        processCallList.innerHTML = result.processCalls.map(call => `
-            <div class="process-call-item ${call.isValid ? 'call-valid' : 'call-invalid'}">
-                <div>
-                    <strong>${call.name}</strong>
-                    <div class="process-details">
-                        Parámetros: [${call.parameters.join(', ')}]
-                        ${call.line !== 'desconocida' ? ` • Línea: ${call.line}` : ''}
-                    </div>
-                </div>
-                <div class="valid-badge ${call.isValid ? 'valid-true' : 'valid-false'}">
-                    ${call.isValid ? 'Válida' : 'Inválida'}
-                </div>
-            </div>
-        `).join('');
-    } else {
-        processCallList.innerHTML = '<div class="empty-state">No se realizaron llamadas a procesos</div>';
-    }
-
-    // Renderizar variables
-    const variableList = document.getElementById('variableList');
-    if (result.symbolTable && result.symbolTable.length > 0) {
-        variableList.innerHTML = result.symbolTable.map(variable => `
-            <div class="variable-item">
-                <div class="variable-name">
-                    <i>📝</i> ${variable.name}
-                </div>
-                <div class="variable-details">
-                    <div><strong>Tipo:</strong> ${variable.type}</div>
-                    <div><strong>Ámbito:</strong> ${variable.scope}</div>
-                    <div><strong>Inicializada:</strong> ${variable.initialized ? 'Sí' : 'No'}</div>
-                </div>
-            </div>
-        `).join('');
-    } else {
-        variableList.innerHTML = '<div class="empty-state">No se declararon variables globales</div>';
-    }
-
-    // Renderizar áreas
-    const areaList = document.getElementById('areaList');
-    if (result.executable.areas && result.executable.areas.length > 0) {
-        areaList.innerHTML = result.executable.areas.map(area => `
-            <div class="area-item">
-                <div class="area-name">
-                    <i>🗺️</i> ${area.name}
-                </div>
-                <div class="area-details">
-                    <div><strong>Tipo:</strong> ${area.type}</div>
-                    <div><strong>Dimensiones:</strong> ${area.dimensions.join(' x ')}</div>
-                    <div><strong>Límites:</strong> (${area.bounds.x1}, ${area.bounds.y1}) a (${area.bounds.x2}, ${area.bounds.y2})</div>
-                </div>
-            </div>
-        `).join('');
-    } else {
-        areaList.innerHTML = '<div class="empty-state">No se declararon áreas</div>';
-    }
-
-    // Renderizar errores
-    const errorList = document.getElementById('errorList');
-    if (result.errors && result.errors.length > 0) {
-        errorList.innerHTML = result.errors.map(error => `
-            <div class="error-item">
-                <div class="error-message">${error}</div>
-            </div>
-        `).join('');
-    } else {
-        errorList.innerHTML = '<div class="empty-state">No se encontraron errores</div>';
-    }
-
-    // Renderizar código ejecutable
-    const executableCode = document.getElementById('executableCode');
-    if (result.executable) {
-        executableCode.textContent = JSON.stringify(result.executable, null, 2);
-    } else {
-        executableCode.textContent = "No se generó código ejecutable";
-    }
-    
-    */
-
-}
-
-// Función para actualizar con nuevos resultados
-function updateCompilerResults(newResult) {
-    renderCompilerResults(newResult);
-}
-
-// Inicializar cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
-    inicializarEditor();
-    
-    // Configurar toggle para código ejecutable
-    document.getElementById('toggleExecutable').addEventListener('click', function() {
-        const codeBlock = document.getElementById('executableCode');
-        const toggleButton = document.getElementById('toggleExecutable');
-        
-        if (codeBlock.classList.contains('hidden')) {
-            codeBlock.classList.remove('hidden');
-            toggleButton.innerHTML = '<span>Ocultar</span> <i>▲</i>';
-        } else {
-            codeBlock.classList.add('hidden');
-            toggleButton.innerHTML = '<span>Mostrar</span> <i>▼</i>';
-        }
-    });
-});
