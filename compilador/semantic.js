@@ -283,7 +283,7 @@ class SemanticAnalyzer {
             'depositarFlor', 'depositarPapel', 'PosAv', 'PosCa',
             'HayFlorEnLaBolsa', 'HayPapelEnLaBolsa', 'HayFlorEnLaEsquina', 
             'HayPapelEnLaEsquina', 'Pos', 'Informar', 'AsignarArea',
-            'Leer', 'Random', 'BloquearEsquina', 'LiberarEsquina',
+            'Random', 'BloquearEsquina', 'LiberarEsquina',
             'EnviarMensaje', 'RecibirMensaje'
         ];
 
@@ -573,8 +573,33 @@ class SemanticAnalyzer {
         return this.processesInfo;
     }
 
+    getTotalInstructionsProcesos(){
+        let total = 0;
+        for (let p of this.processesInfo) {
+            total += p.bodyStatements;
+        }
+        return total;
+    }
+
+    getTotalInstructionsRobots(){
+        let total = 0;
+        for (let r of this.executableCode.robots) {
+            for (let instr of r.instructions){
+                if (instr.type != 'process_call') {
+                    total += 1;
+                }
+            }
+        }
+        return total;
+    }
+
+    getTotalInstructions() {
+        return this.getTotalInstructionsProcesos() + this.getTotalInstructionsRobots() ;
+    }
+
     getAnalysisSummary() {
         return {
+            totalInstructions: this.getTotalInstructions(),
             totalProcesses: this.processesInfo.length,
             totalProcessCalls: this.processCalls.length,
             validProcessCalls: this.processCalls.filter(call => call.isValid).length,
