@@ -94,13 +94,11 @@ function actualizarNombreArchivo(nombre) {
     }
 }
 
-// Funciones para contabilizar instrucciones funcionales (Cuenta las instrucciones que no son comentarios y que son utilizadas para el algoritmo)
-
 // Función para renderizar los resultados
 function renderCompilerResults(result) {
     // Actualizar resumen
     document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
-    //document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
+    document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
     //document.getElementById('totalConexiones').textContent = result.summary.totalConexiones;
     document.getElementById('totalAreas').textContent = result.summary.totalAreas;
     document.getElementById('totalRobots').textContent = result.summary.totalRobots;
