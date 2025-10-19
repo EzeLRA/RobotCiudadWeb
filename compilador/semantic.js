@@ -14,6 +14,14 @@ class SemanticAnalyzer {
             main: [],
             variables: new Map()
         };
+        
+        // NUEVO: Estructuras para rastrear comunicaciones
+        this.messageCommunications = {
+            senders: new Map(),     // robot/process -> número de envíos
+            receivers: new Map(),   // robot/process -> número de recepciones
+            connections: new Set(), // pares de comunicación únicos
+            robotCommunications: new Map() // robot -> {sends: number, receives: number}
+        };
     }
 
     analyze(ast) {
@@ -31,6 +39,14 @@ class SemanticAnalyzer {
             variables: new Map()
         };
         
+        // NUEVO: Reiniciar estructuras de comunicación
+        this.messageCommunications = {
+            senders: new Map(),
+            receivers: new Map(),
+            connections: new Set(),
+            robotCommunications: new Map()
+        };
+        
         this.visitProgram(ast);
         
         return {
@@ -40,10 +56,195 @@ class SemanticAnalyzer {
             executable: this.executableCode,
             errors: this.errors,
             success: this.errors.length === 0,
-            summary: this.getAnalysisSummary()
+            summary: this.getAnalysisSummary(),
+            // NUEVO: Incluir estadísticas de comunicación
+            communicationStats: this.getCommunicationStats()
         };
     }
 
+    // NUEVO: Método para registrar envío de mensajes
+    registerMessageSend(sender, target = null) {
+        const senderName = this.getCurrentEntityName();
+        
+        // Registrar envío del sender
+        const currentSends = this.messageCommunications.senders.get(senderName) || 0;
+        this.messageCommunications.senders.set(senderName, currentSends + 1);
+        
+        // Registrar comunicación si hay un target específico
+        if (target) {
+            const connectionKey = `${senderName}->${target}`;
+            this.messageCommunications.connections.add(connectionKey);
+        }
+        
+        // Actualizar estadísticas del robot/proceso actual
+        this.updateRobotCommunicationStats(senderName, 'send');
+    }
+
+    // NUEVO: Método para registrar recepción de mensajes
+    registerMessageReceive(receiver, source = null) {
+        const receiverName = this.getCurrentEntityName();
+        
+        // Registrar recepción del receiver
+        const currentReceives = this.messageCommunications.receivers.get(receiverName) || 0;
+        this.messageCommunications.receivers.set(receiverName, currentReceives + 1);
+        
+        // Registrar comunicación si hay un source específico
+        if (source) {
+            const connectionKey = `${source}->${receiverName}`;
+            this.messageCommunications.connections.add(connectionKey);
+        }
+        
+        // Actualizar estadísticas del robot/proceso actual
+        this.updateRobotCommunicationStats(receiverName, 'receive');
+    }
+
+    // NUEVO: Obtener el nombre de la entidad actual (robot o proceso)
+    getCurrentEntityName() {
+        if (this.currentScope.startsWith('robot:')) {
+            return this.currentScope.replace('robot:', '');
+        } else if (this.currentScope.startsWith('proceso:')) {
+            return this.currentScope.replace('proceso:', '');
+        } else if (this.currentScope === 'main') {
+            return 'main';
+        }
+        return 'global';
+    }
+
+    // NUEVO: Actualizar estadísticas de comunicación por robot
+    updateRobotCommunicationStats(entityName, type) {
+        if (!this.messageCommunications.robotCommunications.has(entityName)) {
+            this.messageCommunications.robotCommunications.set(entityName, {
+                sends: 0,
+                receives: 0,
+                total: 0
+            });
+        }
+        
+        const stats = this.messageCommunications.robotCommunications.get(entityName);
+        if (type === 'send') {
+            stats.sends++;
+        } else if (type === 'receive') {
+            stats.receives++;
+        }
+        stats.total = stats.sends + stats.receives;
+    }
+
+    // NUEVO: Método para analizar comunicaciones en instrucciones de mensajes
+    analyzeMessageCommunication(node) {
+        const currentEntity = this.getCurrentEntityName();
+        
+        if (node.instruction === 'EnviarMensaje') {
+            // Registrar envío de mensaje
+            let target = null;
+            if (node.parameters && node.parameters.length > 0) {
+                // El primer parámetro podría ser el destinatario
+                target = this.extractParameterValue(node.parameters[0]);
+            }
+            this.registerMessageSend(currentEntity, target);
+            
+        } else if (node.instruction === 'RecibirMensaje') {
+            // Registrar recepción de mensaje
+            let source = null;
+            if (node.parameters && node.parameters.length > 0) {
+                // El primer parámetro podría ser el remitente
+                source = this.extractParameterValue(node.parameters[0]);
+            }
+            this.registerMessageReceive(currentEntity, source);
+        }
+    }
+
+    // NUEVO: Extraer valor de parámetro para análisis de comunicación
+    extractParameterValue(param) {
+        if (typeof param === 'string') {
+            return param;
+        } else if (param && param.value !== undefined) {
+            return param.value.toString();
+        } else if (param && param.name) {
+            return param.name;
+        }
+        return null;
+    }
+
+    // NUEVO: Obtener estadísticas de comunicación
+    getCommunicationStats() {
+        const totalSends = Array.from(this.messageCommunications.senders.values())
+            .reduce((sum, count) => sum + count, 0);
+        const totalReceives = Array.from(this.messageCommunications.receivers.values())
+            .reduce((sum, count) => sum + count, 0);
+        
+        // Calcular robots que participaron en comunicación bidireccional
+        const communicatingRobots = new Set();
+        
+        // Robots que enviaron mensajes
+        this.messageCommunications.senders.forEach((count, robot) => {
+            if (count > 0) {
+                communicatingRobots.add(robot);
+            }
+        });
+        
+        // Robots que recibieron mensajes
+        this.messageCommunications.receivers.forEach((count, robot) => {
+            if (count > 0) {
+                communicatingRobots.add(robot);
+            }
+        });
+        
+        // Calcular conexiones efectivas (donde hay tanto envío como recepción)
+        const effectiveConnections = Array.from(this.messageCommunications.connections)
+            .filter(conn => {
+                const [sender, receiver] = conn.split('->');
+                return this.messageCommunications.receivers.has(receiver) && 
+                       this.messageCommunications.receivers.get(receiver) > 0;
+            });
+        
+        return {
+            totalSends,
+            totalReceives,
+            totalConnections: this.messageCommunications.connections.size,
+            effectiveConnections: effectiveConnections.length,
+            communicatingEntities: Array.from(communicatingRobots),
+            totalCommunicatingRobots: communicatingRobots.size,
+            byRobot: Array.from(this.messageCommunications.robotCommunications.entries()).map(([name, stats]) => ({
+                name,
+                sends: stats.sends,
+                receives: stats.receives,
+                total: stats.total,
+                isCommunicating: stats.total > 0
+            })),
+            // NUEVO: Métrica específica solicitada
+            totalConexiones: this.calculateTotalConexiones()
+        };
+    }
+
+    // NUEVO: Calcular el total de conexiones según la especificación
+    calculateTotalConexiones() {
+        const communicatingEntities = new Set();
+        
+        // Contar robots que tienen comunicación bidireccional efectiva
+        this.messageCommunications.robotCommunications.forEach((stats, entity) => {
+            // Un robot tiene conexión si envió mensajes Y hay receptores para esos mensajes
+            if (stats.sends > 0) {
+                // Verificar si hay algún receptor para los mensajes de este robot
+                let hasReceiver = false;
+                this.messageCommunications.connections.forEach(conn => {
+                    if (conn.startsWith(`${entity}->`)) {
+                        const receiver = conn.split('->')[1];
+                        if (this.messageCommunications.receivers.has(receiver) && 
+                            this.messageCommunications.receivers.get(receiver) > 0) {
+                            hasReceiver = true;
+                        }
+                    }
+                });
+                
+                if (hasReceiver) {
+                    communicatingEntities.add(entity);
+                }
+            }
+        });
+        
+        return communicatingEntities.size;
+    }
+    
     visitProgram(node) {
         this.enterScope('global');
         this.executableCode.programa = node.name;
@@ -289,6 +490,11 @@ class SemanticAnalyzer {
 
         if (!validInstructions.includes(node.instruction)) {
             this.errors.push(`Instrucción elemental no reconocida: '${node.instruction}'`);
+        }
+
+        // NUEVO: Analizar comunicación para instrucciones de mensajes
+        if (node.instruction === 'EnviarMensaje' || node.instruction === 'RecibirMensaje') {
+            this.analyzeMessageCommunication(node);
         }
 
         if (node.parameters) {
@@ -606,7 +812,9 @@ class SemanticAnalyzer {
             totalErrors: this.errors.length,
             totalVariables: this.getFormattedSymbolTable().length,
             totalRobots: this.executableCode.robots.length,
-            totalAreas: this.executableCode.areas.length
+            totalAreas: this.executableCode.areas.length,
+            // NUEVO: Incluir totalConexiones en el resumen
+            totalConexiones: this.calculateTotalConexiones()
         };
     }
 }
