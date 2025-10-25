@@ -12,14 +12,14 @@ class Parser {
 
     parseProgram() {
         //Busca si el primer token obtenido por el lexer es "programa" (no puede ser otra instruccion)
-        this.consume('KEYWORD','programa');
+        this.consume(TOKEN_TYPES.KEYWORD,keywords.get('KEYWORD6'));
         //Sino hubo errores , procedera en almacenar el nombre del programa
-        const programName = this.consume('IDENTIFIER').value;
+        const programName = this.consume(TOKEN_TYPES.IDENTIFIER).value;
         
         const body = [];
         
         // Parsear secciones en el orden que aparecen
-        if (this.match('KEYWORD', 'procesos')) {
+        if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD7'))) {
             body.push(this.parseProcesos());
         } 
     
@@ -39,11 +39,11 @@ class Parser {
     }
 
     parseProcesos() {
-        this.consume('KEYWORD', 'procesos');
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD7') );
         const procesos = [];
         
         while (!this.isAtEnd() && !this.isNextSection()) {
-            if (this.match('KEYWORD', 'proceso')) {
+            if (this.match(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD1'))) {
                 procesos.push(this.parseProceso());
             } else {
                 this.advance();
@@ -57,24 +57,24 @@ class Parser {
     }
 
     parseProceso() {
-        this.consume('KEYWORD', 'proceso');
-        const name = this.consume('IDENTIFIER').value;
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD1') );
+        const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
         const varDeclarations = [];
 
         // Parsear parámetros (ej: "E numAv: numero")
         const parameters = [];
-        while (this.match('PARAMETER')) {
-            const paramToken = this.consume('PARAMETER');
+        while (this.match(TOKEN_TYPES.PARAMETER)) {
+            const paramToken = this.consume(TOKEN_TYPES.PARAMETER);
             parameters.push(this.parseParameter(paramToken.value));
         }
         
-        if (this.match('KEYWORD','variables')) {
+        if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3') )) {
             varDeclarations.push(this.parseVariablesSection());
         }
 
-        this.consume('KEYWORD', 'comenzar');
+        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD4') );
         const body = this.parseBlock();
-        this.consume('KEYWORD', 'fin');
+        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD5') );
 
         return {
             type: 'Proceso',
@@ -96,11 +96,11 @@ class Parser {
     }
 
     parseAreas() {
-        this.consume('KEYWORD', 'areas');
+        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD8'));
         const areas = [];
         
         while (!this.isAtEnd() && !this.isNextSection()) {
-            if (this.match('IDENTIFIER')) {
+            if (this.match(TOKEN_TYPES.IDENTIFIER)) {
                 areas.push(this.parseAreaDefinition());
             } else {
                 this.advance();
@@ -114,9 +114,9 @@ class Parser {
     }
 
     parseAreaDefinition() {
-        const areaName = this.consume('IDENTIFIER').value;
-        this.consume('OPERATOR', ':');
-        const areaType = this.consume('ELEMENTAL_INSTRUCTION').value; // AreaC, AreaP, etc.
+        const areaName = this.consume(TOKEN_TYPES.IDENTIFIER).value;
+        this.consume(TOKEN_TYPES.OPERATOR , ':');
+        const areaType = this.consume(TOKEN_TYPES.ELEMENTAL_INSTRUCTION).value; // AreaC, AreaP, etc.
         const dimensions = this.parseParameterList();
         
         return {
@@ -128,11 +128,11 @@ class Parser {
     }
 
     parseRobots() {
-        this.consume('KEYWORD', 'robots');
+        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD9') );
         const robots = [];
         
         while (!this.isAtEnd() && !this.isNextSection()) {
-            if (this.match('KEYWORD', 'robot')) {
+            if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD2') )) {
                 robots.push(this.parseRobot());
             } else {
                 this.advance();
@@ -146,17 +146,17 @@ class Parser {
     }
 
     parseRobot() {
-        this.consume('KEYWORD', 'robot');
-        const name = this.consume('IDENTIFIER').value;
+        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD2') );
+        const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
         const varDeclarations = [];
 
-        if (this.match('KEYWORD','VARIABLES')) {
+        if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3') )) {
             varDeclarations.push(this.parseVariableDeclaration());
         }
 
-        this.consume('KEYWORD', 'comenzar');
+        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD4'));
         const body = this.parseBlock();
-        this.consume('KEYWORD', 'fin');
+        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD5'));
 
         return {
             type: 'Robot',
@@ -165,6 +165,10 @@ class Parser {
             body: body
         };
     }
+
+    /*
+    CONTINUAR
+    */
 
     parseVariablesSection() {
         this.consume('KEYWORD', 'variables');
