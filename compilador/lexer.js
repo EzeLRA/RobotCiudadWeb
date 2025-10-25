@@ -7,13 +7,6 @@ class CompilerError extends Error {
     }
 }
 
-const TOKEN_TYPES = {
-    KEYWORD: 'KEYWORD',
-    CONTROL_SENTENCE: 'CONTROL_SENTENCE', 
-    ELEMENTAL_INSTRUCTION: 'ELEMENTAL_INSTRUCTION',
-    IDENTIFIER: 'IDENTIFIER'
-};
-
 class Lexer {
     constructor(source) {
         this.source = source;
@@ -24,62 +17,6 @@ class Lexer {
         this.indentStack = [0]; 
         this.atLineStart = true; 
         this.currentIndent = 0;  
-
-        //Tipos de datos
-        this.typesDefined = new Map([
-            ['numero', TOKEN_TYPES.IDENTIFIER],
-            ['booleano', TOKEN_TYPES.IDENTIFIER],
-            ['V', TOKEN_TYPES.IDENTIFIER],
-            ['F', TOKEN_TYPES.IDENTIFIER]
-        ])
-
-        //Conjunto de palabras claves
-        this.keywordMap = new Map([
-            // Palabras clave básicas
-            ['proceso', TOKEN_TYPES.KEYWORD],
-            ['robot', TOKEN_TYPES.KEYWORD],
-            ['variables', TOKEN_TYPES.KEYWORD],
-            ['comenzar', TOKEN_TYPES.KEYWORD],
-            ['fin', TOKEN_TYPES.KEYWORD],
-            ['programa', TOKEN_TYPES.KEYWORD],
-            ['procesos', TOKEN_TYPES.KEYWORD],
-            ['areas', TOKEN_TYPES.KEYWORD],
-            ['robots', TOKEN_TYPES.KEYWORD],
-            
-            // Estructuras de control
-            ['si', TOKEN_TYPES.CONTROL_SENTENCE],
-            ['sino', TOKEN_TYPES.CONTROL_SENTENCE],
-            ['mientras', TOKEN_TYPES.CONTROL_SENTENCE],
-            ['repetir', TOKEN_TYPES.CONTROL_SENTENCE],
-            
-            // Instrucciones elementales
-            ['Iniciar', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['derecha', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['mover', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['tomarFlor', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['tomarPapel', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['depositarFlor', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['depositarPapel', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['PosAv', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['PosCa', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['HayFlorEnLaBolsa', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['HayPapelEnLaBolsa', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['HayFlorEnLaEsquina', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['HayPapelEnLaEsquina', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['Pos', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['Informar', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['AsignarArea', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['AreaC', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['AreaPC', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['AreaP', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['Leer', TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['Random' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['BloquearEsquina' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['LiberarEsquina' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['EnviarMensaje' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION],
-            ['RecibirMensaje' , TOKEN_TYPES.ELEMENTAL_INSTRUCTION]
-        ]);
-
     }
 
     tokenize() {
@@ -117,7 +54,7 @@ class Lexer {
             }
         }
 
-        this.tokens.push({ type: 'EOF', value: '', line: this.line, column: this.column });
+        this.tokens.push(new Token(TOKEN_TYPES.END_FILE,'',this.line,this.column));
         return this.tokens;
     }
 
@@ -144,11 +81,11 @@ class Lexer {
 
         // Lógica para generar tokens INDENT/DEDENT
         if (indent > this.indentStack[this.indentStack.length - 1]) {
-            this.tokens.push({ type: 'INDENT', value: '', line: this.line, column: 1 });
+            this.tokens.push(new Token(TOKEN_TYPES.INDENT,'',this.line,1));
             this.indentStack.push(indent);
         } else if (indent < this.indentStack[this.indentStack.length - 1]) {
             while (indent < this.indentStack[this.indentStack.length - 1]) {
-                this.tokens.push({ type: 'DEDENT', value: '', line: this.line, column: 1 });
+                this.tokens.push(new Token(TOKEN_TYPES.DEDENT,'',this.line,1));
                 this.indentStack.pop();
             }
         }
@@ -196,12 +133,8 @@ class Lexer {
             this.column++;
         }
 
-        this.tokens.push({
-            type: 'NUMBER',
-            value: parseInt(value),
-            line: this.line,
-            column: this.column - value.length
-        });
+        this.tokens.push(new Token(TOKEN_TYPES.NUM,parseInt(value),this.line,this.column - value.length));
+        
     }
 
     readIdentifier() {
@@ -215,14 +148,10 @@ class Lexer {
             this.column++;
         }
 
-        const type = this.keywordMap.get(value) || this.typesDefined.get(value) || TOKEN_TYPES.IDENTIFIER;
+        const type = keywordMap.get(value) || typesDefined.get(value) || TOKEN_TYPES.IDENTIFIER;
 
-        this.tokens.push({
-            type,
-            value,
-            line: this.line,
-            column: this.column - value.length
-        });
+        this.tokens.push(new Token(type,value,this.line,this.column - value.length));
+        
     }
 
     readString(quote) {
@@ -250,12 +179,8 @@ class Lexer {
         this.position++; // Saltar la comilla final
         this.column++;
 
-        this.tokens.push({
-            type: 'STRING',
-            value,
-            line: this.line,
-            column: this.column - value.length - 2
-        });
+        this.tokens.push(new Token(TOKEN_TYPES.STR,value,this.line,this.column - value.length - 2));
+        
     }
 
     readOperator() {
@@ -266,12 +191,8 @@ class Lexer {
 
         // Si es una coma o dos puntos simples, procesar inmediatamente
         if (char === ',' || char === ':') {
-            this.tokens.push({
-                type: 'OPERATOR',
-                value,
-                line: this.line,
-                column: this.column - value.length
-            });
+            this.tokens.push(new Token(TOKEN_TYPES.OPERATOR,value,this.line,this.column - value.length));
+            
             return;
         }
 
@@ -288,12 +209,8 @@ class Lexer {
             }
         }
 
-        this.tokens.push({
-            type: 'OPERATOR',
-            value,
-            line: this.line,
-            column: this.column - value.length
-        });
+        this.tokens.push(new Token(TOKEN_TYPES.OPERATOR,value,this.line,this.column - value.length));
+
     }
 
     readComment() {
@@ -319,7 +236,7 @@ class Lexer {
         let value = '';
         const startLine = this.line;
         const startColumn = this.column;
-        this.position++; // Saltar '{'
+        this.position++; // Saltar '('
         this.column++;
         while (this.position < this.source.length && this.source[this.position] !== ')') {
             value += this.source[this.position];
@@ -334,14 +251,10 @@ class Lexer {
         if (this.position >= this.source.length) {
             throw new CompilerError('Parámetro sin cerrar', this.line, this.column);
         }
-        this.position++; // Saltar '}'
+        this.position++; // Saltar ')'
         this.column++;
 
-        this.tokens.push({
-            type: 'PARAMETER',
-            value: value,
-            line: startLine,
-            column: startColumn
-        });
+        this.tokens.push(new Token(TOKEN_TYPES.PARAMETER,value,startLine,startColumn));
+
     }
 }
