@@ -4,6 +4,13 @@ class Parser {
         this.position = 0;
         this.currentToken = this.tokens[0];
         this.indentLevel = 0;
+        this.procesosNames = [];
+        
+        // Palabras elementales que pueden usarse en expresiones
+        this.elementalValues = [
+            'PosAv', 'PosCa', 'HayFlorEnLaBolsa', 'HayPapelEnLaBolsa',
+            'HayFlorEnLaEsquina', 'HayPapelEnLaEsquina', 'Random'
+        ];
     }
 
     parse() {
@@ -11,14 +18,11 @@ class Parser {
     }
 
     parseProgram() {
-        //Busca si el primer token obtenido por el lexer es "programa" (no puede ser otra instruccion)
-        this.consume(TOKEN_TYPES.KEYWORD,keywords.get('KEYWORD6'));
-        //Sino hubo errores , procedera en almacenar el nombre del programa
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD6'));
         const programName = this.consume(TOKEN_TYPES.IDENTIFIER).value;
         
         const body = [];
         
-        // Parsear secciones en el orden que aparecen
         if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD7'))) {
             body.push(this.parseProcesos());
         } 
@@ -39,11 +43,11 @@ class Parser {
     }
 
     parseProcesos() {
-        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD7') );
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD7'));
         const procesos = [];
         
         while (!this.isAtEnd() && !this.isNextSection()) {
-            if (this.match(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD1'))) {
+            if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD1'))) {
                 procesos.push(this.parseProceso());
             } else {
                 this.advance();
@@ -57,24 +61,24 @@ class Parser {
     }
 
     parseProceso() {
-        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD1') );
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD1'));
         const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
+        this.procesosNames.push(name);
         const varDeclarations = [];
 
-        // Parsear parámetros (ej: "E numAv: numero")
         const parameters = [];
         while (this.match(TOKEN_TYPES.PARAMETER)) {
             const paramToken = this.consume(TOKEN_TYPES.PARAMETER);
             parameters.push(this.parseParameter(paramToken.value));
         }
         
-        if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3') )) {
+        if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3'))) {
             varDeclarations.push(this.parseVariablesSection());
         }
 
-        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD4') );
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD4'));
         const body = this.parseBlock();
-        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD5') );
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD5'));
 
         return {
             type: 'Proceso',
@@ -86,17 +90,16 @@ class Parser {
     }
 
     parseParameter(paramString) {
-        // Ejemplo: "E numAv: numero" → {direction: 'E', name: 'numAv', type: 'numero'}
         const parts = paramString.split(' ');
         return {
-            direction: parts[0], // E = entrada, S = salida, etc.
+            direction: parts[0],
             name: parts[1].split(':')[0],
             type: parts[1].split(':')[1] || 'numero'
         };
     }
 
     parseAreas() {
-        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD8'));
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD8'));
         const areas = [];
         
         while (!this.isAtEnd() && !this.isNextSection()) {
@@ -115,8 +118,8 @@ class Parser {
 
     parseAreaDefinition() {
         const areaName = this.consume(TOKEN_TYPES.IDENTIFIER).value;
-        this.consume(TOKEN_TYPES.OPERATOR , ':');
-        const areaType = this.consume(TOKEN_TYPES.ELEMENTAL_INSTRUCTION).value; // AreaC, AreaP, etc.
+        this.consume(TOKEN_TYPES.OPERATOR, ':');
+        const areaType = this.consume(TOKEN_TYPES.ELEMENTAL_INSTRUCTION).value;
         const dimensions = this.parseParameterList();
         
         return {
@@ -128,11 +131,11 @@ class Parser {
     }
 
     parseRobots() {
-        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD9') );
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD9'));
         const robots = [];
         
         while (!this.isAtEnd() && !this.isNextSection()) {
-            if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD2') )) {
+            if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD2'))) {
                 robots.push(this.parseRobot());
             } else {
                 this.advance();
@@ -146,17 +149,17 @@ class Parser {
     }
 
     parseRobot() {
-        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD2') );
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD2'));
         const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
         const varDeclarations = [];
 
-        if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3') )) {
+        if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3'))) {
             varDeclarations.push(this.parseVariableDeclaration());
         }
 
-        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD4'));
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD4'));
         const body = this.parseBlock();
-        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD5'));
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD5'));
 
         return {
             type: 'Robot',
@@ -167,7 +170,7 @@ class Parser {
     }
 
     parseVariablesSection() {
-        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3') );
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3'));
         const declarations = [];
         
         while (!this.isAtEnd() && !this.isNextSection()) {
@@ -186,10 +189,11 @@ class Parser {
 
     parseVariableDeclaration() {
         const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
-        this.consume(TOKEN_TYPES.OPERATOR,':');
+        this.consume(TOKEN_TYPES.OPERATOR, ':');
         
-        const type = this.match(TOKEN_TYPES.IDENTIFIER) ? this.consume(TOKEN_TYPES.IDENTIFIER).value : this.consume('KEYWORD').value;
-        
+        const type = typesDefined.get(this.currentToken.value) || this.currentToken.value;
+        this.advance();
+
         return {
             type: 'VariableDeclaration',
             name: name,
@@ -200,11 +204,10 @@ class Parser {
     parseMainBlock() {
         const body = [];
         this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD4'));
-        //const body = this.parseBlock();
-        while (!this.isAtEnd() && !this.match(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD5') )) {
+        while (!this.isAtEnd() && !this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD5'))) {
             body.push(this.parseStatement());
         }
-        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD5') );
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD5'));
 
         return {
             type: 'MainBlock',
@@ -215,7 +218,6 @@ class Parser {
     parseBlock() {
         const statements = [];
         
-        // Esperar INDENT para bloques
         if (this.match(TOKEN_TYPES.INDENT)) {
             this.consume(TOKEN_TYPES.INDENT);
             this.indentLevel++;
@@ -229,7 +231,6 @@ class Parser {
             }
             this.indentLevel--;
         } else {
-            // Bloque de una sola línea
             statements.push(this.parseStatement());
         }
 
@@ -245,47 +246,199 @@ class Parser {
             return this.parseRepeatStatement();
         } else if (this.match(TOKEN_TYPES.ELEMENTAL_INSTRUCTION)) {
             return this.parseElementalInstruction();
-        // Revisar esta parte
         } else if (this.match(TOKEN_TYPES.IDENTIFIER)) {
-            return this.parseProcessCall();
-        } else if (this.match(TOKEN_TYPES.OPERATOR)) {
-            return this.parseOperator();
-        } else{
-            throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value} ${this.currentToken.line} "`);
+            if (this.procesosNames.includes(this.currentToken.value)) {
+                return this.parseProcessCall();
+            } else {
+                return this.parseAssignmentOrDeclaration();
+            }
+        } else {
+            throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value}" en línea ${this.currentToken.line}`);
         }
     }
 
-    /*
-         Revisar a futuro
-    */
-    parseOperator(){
-        const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
-        if (operator == ":="){
-            const operator2 = this.consume(TOKEN_TYPES.NUM).value ;
-            return {
-                type: 'Assignment',
+    parseAssignmentOrDeclaration() {
+        const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
+        
+        if (this.match(TOKEN_TYPES.OPERATOR)) {
+            const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
+            
+            if (operator === ":=") {
+                const value = this.parseExpression();
+                return {
+                    type: 'Assignment',
+                    left: { type: 'Identifier', name: name },
+                    right: value,
+                    operator: ':='
+                };
+            } else if (operator === ":") {
+                let typeValue;
+                
+                if (this.match(TOKEN_TYPES.KEYWORD)) {
+                    typeValue = this.consume(TOKEN_TYPES.KEYWORD).value;
+                } else if (this.match(TOKEN_TYPES.IDENTIFIER)) {
+                    typeValue = this.consume(TOKEN_TYPES.IDENTIFIER).value;
+                } else {
+                    throw new Error(`Tipo esperado después de ':'`);
+                }
+                
+                return {
+                    type: 'VariableDeclaration',
+                    name: name,
+                    variableType: typeValue
+                };
+            }
+        }
+        
+        throw new Error(`Operador ':' o ':=' esperado después de identificador '${name}'`);
+    }
+
+    parseExpression() {
+        return this.parseLogicalExpression();
+    }
+
+    parseLogicalExpression() {
+        let left = this.parseComparativeExpression();
+        
+        while (this.match(TOKEN_TYPES.OPERATOR, '&') || 
+               this.match(TOKEN_TYPES.OPERATOR, '|')) {
+            const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
+            const right = this.parseComparativeExpression();
+            
+            left = {
+                type: 'BinaryExpression',
                 operator: operator,
-                value: operator2
+                left: left,
+                right: right
             };
         }
-        return {
-            type: 'Operator',
-            operator: operator
-        };
+        
+        return left;
+    }
+
+    parseComparativeExpression() {
+        let left = this.parseAdditiveExpression();
+        
+        const comparators = ['==', '!=', '<', '>', '<=', '>='];
+        while (this.match(TOKEN_TYPES.OPERATOR) && 
+               comparators.includes(this.currentToken.value)) {
+            const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
+            const right = this.parseAdditiveExpression();
+            
+            left = {
+                type: 'BinaryExpression',
+                operator: operator,
+                left: left,
+                right: right
+            };
+        }
+        
+        return left;
+    }
+
+    parseAdditiveExpression() {
+        let left = this.parseMultiplicativeExpression();
+        
+        while (this.match(TOKEN_TYPES.OPERATOR, '+') || 
+               this.match(TOKEN_TYPES.OPERATOR, '-')) {
+            const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
+            const right = this.parseMultiplicativeExpression();
+            
+            left = {
+                type: 'BinaryExpression',
+                operator: operator,
+                left: left,
+                right: right
+            };
+        }
+        
+        return left;
+    }
+
+    parseMultiplicativeExpression() {
+        let left = this.parsePrimaryExpression();
+        
+        while (this.match(TOKEN_TYPES.OPERATOR, '*') || 
+               this.match(TOKEN_TYPES.OPERATOR, '/')) {
+            const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
+            const right = this.parsePrimaryExpression();
+            
+            left = {
+                type: 'BinaryExpression',
+                operator: operator,
+                left: left,
+                right: right
+            };
+        }
+        
+        return left;
+    }
+
+    parsePrimaryExpression() {
+        if (this.match(TOKEN_TYPES.NUM)) {
+            const token = this.consume(TOKEN_TYPES.NUM);
+            return {
+                type: 'Literal',
+                value: parseInt(token.value),
+                raw: token.value
+            };
+        } else if (this.match(TOKEN_TYPES.IDENTIFIER)) {
+            const token = this.consume(TOKEN_TYPES.IDENTIFIER);
+            
+            // Verificar si es una palabra elemental que representa un valor
+            if (this.elementalValues.includes(token.value)) {
+                return {
+                    type: 'ElementalValue',
+                    name: token.value
+                };
+            }
+            
+            // Es una variable normal
+            return {
+                type: 'Identifier',
+                name: token.value
+            };
+        } else if (this.match(TOKEN_TYPES.KEYWORD)) {
+            // Valores booleanos: V (true), F (false)
+            if (this.currentToken.value === 'V' || this.currentToken.value === 'F') {
+                const token = this.consume(TOKEN_TYPES.KEYWORD);
+                return {
+                    type: 'Literal',
+                    value: token.value === 'V',
+                    raw: token.value
+                };
+            }
+            throw new Error(`Keyword no válida en expresión: ${this.currentToken.value}`);
+        } else if (this.match(TOKEN_TYPES.OPERATOR, '(')) {
+            this.consume(TOKEN_TYPES.OPERATOR, '(');
+            const expression = this.parseExpression();
+            this.consume(TOKEN_TYPES.OPERATOR, ')');
+            return expression;
+        } else if (this.match(TOKEN_TYPES.OPERATOR, '-')) {
+            this.consume(TOKEN_TYPES.OPERATOR, '-');
+            return {
+                type: 'UnaryExpression',
+                operator: '-',
+                argument: this.parsePrimaryExpression()
+            };
+        } else if (this.match(TOKEN_TYPES.OPERATOR, '!')) {
+            this.consume(TOKEN_TYPES.OPERATOR, '!');
+            return {
+                type: 'UnaryExpression',
+                operator: '!',
+                argument: this.parsePrimaryExpression()
+            };
+        }
+        
+        throw new Error(`Expresión primaria no válida: ${this.currentToken.type} "${this.currentToken.value}"`);
     }
 
     parseIfStatement() {
         this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE1'));
-        
-        // Parsear condición (puede ser una expresión simple o compleja)
         const condition = this.parseCondition();
-        
-        // Parsear bloque THEN
         const consequent = this.parseBlock();
         
         let alternate = null;
-        
-        // Verificar si hay un bloque SINO
         if (this.match(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE2'))) {
             this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE2'));
             alternate = this.parseBlock();
@@ -299,17 +452,9 @@ class Parser {
         };
     }
 
-    /*
-       Revisar a futuro
-    */
-
     parseWhileStatement() {
         this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE3'));
-        
-        // Parsear condición
         const condition = this.parseCondition();
-        
-        // Parsear cuerpo del bucle
         const body = this.parseBlock();
 
         return {
@@ -319,9 +464,6 @@ class Parser {
         };
     }
 
-    /*
-       Revisar a futuro
-    */
     parseRepeatStatement() {
         this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE4'));
         const count = this.consume(TOKEN_TYPES.NUM).value;
@@ -334,17 +476,9 @@ class Parser {
         };
     }
 
-    /*
-         Revisar a futuro
-    */
-
     parseCondition() {
-        // Para condiciones simples, podemos leer hasta el final de línea o parámetro
-        // En una implementación más avanzada, esto sería un parser de expresiones
-        
         let condition = '';
         
-        // Leer la condición hasta encontrar un token que indique el fin
         while (!this.isAtEnd() && 
                !this.match(TOKEN_TYPES.INDENT) && 
                !this.match(TOKEN_TYPES.CONTROL_SENTENCE) && 
@@ -355,12 +489,10 @@ class Parser {
             this.advance();
         }
         
-        // Limpiar espacios extra
         condition = condition.trim();
         
-        // Si no hay condición, lanzar error
         if (!condition) {
-            throw new Error(`Condición esperada después de Si o Sino `);
+            throw new Error(`Condición esperada después de Si o Sino`);
         }
         
         return {
@@ -403,13 +535,12 @@ class Parser {
         const parameters = [];
         if (this.match(TOKEN_TYPES.PARAMETER)) {
             const paramToken = this.consume(TOKEN_TYPES.PARAMETER);
-            // Dividir parámetros por comas: "1,1,100,100" → ['1', '1', '100', '100']
             parameters.push(...paramToken.value.split(',').map(p => p.trim()));
         }
         return parameters;
     }
 
-    // Métodos auxiliares mejorados
+    // Métodos auxiliares
     expect(type, value = null) {
         if (this.isAtEnd()) {
             throw new Error(`Se esperaba ${type} pero se alcanzó el final`);
@@ -442,7 +573,7 @@ class Parser {
     }
 
     isNextSection() {
-        const nextTokens = [keywords.get('KEYWORD7'), keywords.get('KEYWORD8'), keywords.get('KEYWORD9'), keywords.get('KEYWORD3') , keywords.get('KEYWORD4') ];
+        const nextTokens = [keywords.get('KEYWORD7'), keywords.get('KEYWORD8'), keywords.get('KEYWORD9'), keywords.get('KEYWORD3'), keywords.get('KEYWORD4')];
         return nextTokens.includes(this.currentToken.value);
     }
 

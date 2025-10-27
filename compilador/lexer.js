@@ -148,7 +148,7 @@ class Lexer {
             this.column++;
         }
 
-        const type = keywordMap.get(value) || typesDefined.get(value) || TOKEN_TYPES.IDENTIFIER;
+        const type = keywordMap.get(value) || typesDefined.get(value) || varTypes.get(value) || TOKEN_TYPES.IDENTIFIER;
 
         this.tokens.push(new Token(type,value,this.line,this.column - value.length));
         
@@ -202,8 +202,8 @@ class Lexer {
             const nextChar = this.source[this.position];
             const twoCharOp = char + nextChar;
             
-            const doubleOperators = [':=','==', '<=', '>=', '&', '|','~',':',','];
-            if (doubleOperators.includes(twoCharOp)) {
+            const operators = [':=','==', '<=', '>=', '&', '|','~',':',',','+','-','/','*'];
+            if (operators.includes(twoCharOp)) {
                 value = twoCharOp;
                 this.position++;
                 this.column++;

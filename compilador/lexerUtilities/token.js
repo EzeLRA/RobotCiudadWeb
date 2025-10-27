@@ -14,11 +14,16 @@ const TOKEN_TYPES = {
     END_FILE: 'EOF'
 };
 //Tipos de datos
+const varTypes = new Map([
+    [TOKEN_TYPES.NUM , 'numero'],
+    [TOKEN_TYPES.BOOL , 'booleano']
+]);
+
 const typesDefined = new Map([
-    ['numero', TOKEN_TYPES.IDENTIFIER],
-    ['booleano', TOKEN_TYPES.IDENTIFIER],
-    ['V', TOKEN_TYPES.IDENTIFIER],
-    ['F', TOKEN_TYPES.IDENTIFIER]
+    ['numero', TOKEN_TYPES.NUM],
+    ['booleano', TOKEN_TYPES.BOOL],
+    ['V', TOKEN_TYPES.BOOL],
+    ['F', TOKEN_TYPES.BOOL]
 ]);
 //Listado con las palabras clave
 const keywords = new Map([
