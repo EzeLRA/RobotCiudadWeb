@@ -166,16 +166,12 @@ class Parser {
         };
     }
 
-    /*
-    CONTINUAR
-    */
-
     parseVariablesSection() {
-        this.consume('KEYWORD', 'variables');
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3') );
         const declarations = [];
         
         while (!this.isAtEnd() && !this.isNextSection()) {
-            if (this.match('IDENTIFIER')) {
+            if (this.match(TOKEN_TYPES.IDENTIFIER)) {
                 declarations.push(this.parseVariableDeclaration());
             } else {
                 this.advance();
@@ -189,10 +185,10 @@ class Parser {
     }
 
     parseVariableDeclaration() {
-        const name = this.consume('IDENTIFIER').value;
-        this.consume('OPERATOR', ':');
+        const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
+        this.consume(TOKEN_TYPES.OPERATOR,':');
         
-        const type = this.match('IDENTIFIER') ? this.consume('IDENTIFIER').value : this.consume('KEYWORD').value;
+        const type = this.match(TOKEN_TYPES.IDENTIFIER) ? this.consume(TOKEN_TYPES.IDENTIFIER).value : this.consume('KEYWORD').value;
         
         return {
             type: 'VariableDeclaration',
@@ -203,12 +199,12 @@ class Parser {
 
     parseMainBlock() {
         const body = [];
-        this.consume('KEYWORD', 'comenzar');
+        this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD4'));
         //const body = this.parseBlock();
-        while (!this.isAtEnd() && !this.match('KEYWORD','fin')) {
+        while (!this.isAtEnd() && !this.match(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD5') )) {
             body.push(this.parseStatement());
         }
-        this.consume('KEYWORD', 'fin');
+        this.consume(TOKEN_TYPES.KEYWORD , keywords.get('KEYWORD5') );
 
         return {
             type: 'MainBlock',
@@ -220,16 +216,16 @@ class Parser {
         const statements = [];
         
         // Esperar INDENT para bloques
-        if (this.match('INDENT')) {
-            this.consume('INDENT');
+        if (this.match(TOKEN_TYPES.INDENT)) {
+            this.consume(TOKEN_TYPES.INDENT);
             this.indentLevel++;
             
-            while (!this.isAtEnd() && !this.match('DEDENT')) {
+            while (!this.isAtEnd() && !this.match(TOKEN_TYPES.DEDENT)) {
                 statements.push(this.parseStatement());
             }
             
-            if (this.match('DEDENT')) {
-                this.consume('DEDENT');
+            if (this.match(TOKEN_TYPES.DEDENT)) {
+                this.consume(TOKEN_TYPES.DEDENT);
             }
             this.indentLevel--;
         } else {
@@ -241,23 +237,45 @@ class Parser {
     }
 
     parseStatement() {
-        if (this.match('CONTROL_SENTENCE', 'si')) {
+        if (this.match(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE1'))) {
             return this.parseIfStatement();
-        } else if (this.match('CONTROL_SENTENCE', 'mientras')) {
+        } else if (this.match(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE3'))) {
             return this.parseWhileStatement();
-        } else if (this.match('CONTROL_SENTENCE', 'repetir')) {
+        } else if (this.match(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE4'))) {
             return this.parseRepeatStatement();
-        } else if (this.match('ELEMENTAL_INSTRUCTION')) {
+        } else if (this.match(TOKEN_TYPES.ELEMENTAL_INSTRUCTION)) {
             return this.parseElementalInstruction();
-        } else if (this.match('IDENTIFIER')) {
+        // Revisar esta parte
+        } else if (this.match(TOKEN_TYPES.IDENTIFIER)) {
             return this.parseProcessCall();
-        } else {
+        } else if (this.match(TOKEN_TYPES.OPERATOR)) {
+            return this.parseOperator();
+        } else{
             throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value} ${this.currentToken.line} "`);
         }
     }
 
+    /*
+         Revisar a futuro
+    */
+    parseOperator(){
+        const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
+        if (operator == ":="){
+            const operator2 = this.consume(TOKEN_TYPES.NUM).value ;
+            return {
+                type: 'Assignment',
+                operator: operator,
+                value: operator2
+            };
+        }
+        return {
+            type: 'Operator',
+            operator: operator
+        };
+    }
+
     parseIfStatement() {
-        this.consume('CONTROL_SENTENCE', 'si');
+        this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE1'));
         
         // Parsear condición (puede ser una expresión simple o compleja)
         const condition = this.parseCondition();
@@ -268,8 +286,8 @@ class Parser {
         let alternate = null;
         
         // Verificar si hay un bloque SINO
-        if (this.match('CONTROL_SENTENCE', 'sino')) {
-            this.consume('CONTROL_SENTENCE', 'sino');
+        if (this.match(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE2'))) {
+            this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE2'));
             alternate = this.parseBlock();
         }
 
@@ -281,8 +299,12 @@ class Parser {
         };
     }
 
+    /*
+       Revisar a futuro
+    */
+
     parseWhileStatement() {
-        this.consume('CONTROL_SENTENCE', 'mientras');
+        this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE3'));
         
         // Parsear condición
         const condition = this.parseCondition();
@@ -297,9 +319,12 @@ class Parser {
         };
     }
 
+    /*
+       Revisar a futuro
+    */
     parseRepeatStatement() {
-        this.consume('CONTROL_SENTENCE', 'repetir');
-        const count = this.consume('NUMBER').value;
+        this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE4'));
+        const count = this.consume(TOKEN_TYPES.NUM).value;
         const body = this.parseBlock();
 
         return {
@@ -309,6 +334,10 @@ class Parser {
         };
     }
 
+    /*
+         Revisar a futuro
+    */
+
     parseCondition() {
         // Para condiciones simples, podemos leer hasta el final de línea o parámetro
         // En una implementación más avanzada, esto sería un parser de expresiones
@@ -317,10 +346,10 @@ class Parser {
         
         // Leer la condición hasta encontrar un token que indique el fin
         while (!this.isAtEnd() && 
-               !this.match('INDENT') && 
-               !this.match('CONTROL_SENTENCE') && 
-               !this.match('ELEMENTAL_INSTRUCTION') && 
-               !this.match('IDENTIFIER')) {
+               !this.match(TOKEN_TYPES.INDENT) && 
+               !this.match(TOKEN_TYPES.CONTROL_SENTENCE) && 
+               !this.match(TOKEN_TYPES.ELEMENTAL_INSTRUCTION) && 
+               !this.match(TOKEN_TYPES.IDENTIFIER)) {
             
             condition += this.currentToken.value + ' ';
             this.advance();
@@ -331,7 +360,7 @@ class Parser {
         
         // Si no hay condición, lanzar error
         if (!condition) {
-            throw new Error(`Condición esperada después de 'si' o 'mientras'`);
+            throw new Error(`Condición esperada después de Si o Sino `);
         }
         
         return {
@@ -341,10 +370,10 @@ class Parser {
     }
 
     parseElementalInstruction() {
-        const instruction = this.consume('ELEMENTAL_INSTRUCTION').value;
+        const instruction = this.consume(TOKEN_TYPES.ELEMENTAL_INSTRUCTION).value;
         let parameters = [];
         
-        if (this.match('PARAMETER')) {
+        if (this.match(TOKEN_TYPES.PARAMETER)) {
             parameters = this.parseParameterList();
         }
 
@@ -356,10 +385,10 @@ class Parser {
     }
 
     parseProcessCall() {
-        const processName = this.consume('IDENTIFIER').value;
+        const processName = this.consume(TOKEN_TYPES.IDENTIFIER).value;
         let parameters = [];
         
-        if (this.match('PARAMETER')) {
+        if (this.match(TOKEN_TYPES.PARAMETER)) {
             parameters = this.parseParameterList();
         }
 
@@ -372,8 +401,8 @@ class Parser {
 
     parseParameterList() {
         const parameters = [];
-        if (this.match('PARAMETER')) {
-            const paramToken = this.consume('PARAMETER');
+        if (this.match(TOKEN_TYPES.PARAMETER)) {
+            const paramToken = this.consume(TOKEN_TYPES.PARAMETER);
             // Dividir parámetros por comas: "1,1,100,100" → ['1', '1', '100', '100']
             parameters.push(...paramToken.value.split(',').map(p => p.trim()));
         }
@@ -413,7 +442,7 @@ class Parser {
     }
 
     isNextSection() {
-        const nextTokens = ['procesos', 'areas', 'robots', 'variables', 'comenzar'];
+        const nextTokens = [keywords.get('KEYWORD7'), keywords.get('KEYWORD8'), keywords.get('KEYWORD9'), keywords.get('KEYWORD3') , keywords.get('KEYWORD4') ];
         return nextTokens.includes(this.currentToken.value);
     }
 
@@ -425,6 +454,6 @@ class Parser {
     }
 
     isAtEnd() {
-        return this.position >= this.tokens.length || this.currentToken.type === 'EOF';
+        return this.position >= this.tokens.length || this.currentToken.type === TOKEN_TYPES.EOF;
     }
 }
