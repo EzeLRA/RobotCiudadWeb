@@ -189,19 +189,20 @@ class Lexer {
         this.position++;
         this.column++;
 
-        // Si es una coma o dos puntos simples, procesar inmediatamente
-        if (char === ',' || char === ':') {
+        /*
+        if (char === ',') {
             this.tokens.push(new Token(TOKEN_TYPES.OPERATOR,value,this.line,this.column - value.length));
             
             return;
         }
+        */
 
-        // Operadores de dos caracteres
+        // Operadores de uno o dos caracteres
         if (this.position < this.source.length) {
             const nextChar = this.source[this.position];
             const twoCharOp = char + nextChar;
             
-            const doubleOperators = [':=','==', '<=', '>=', '&', '|','~'];
+            const doubleOperators = [':=','==', '<=', '>=', '&', '|','~',':',','];
             if (doubleOperators.includes(twoCharOp)) {
                 value = twoCharOp;
                 this.position++;
