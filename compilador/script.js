@@ -221,34 +221,21 @@ function compilar() {
     machine.reset(sourceCode);
 
     // 1. Análisis Léxico
-    const tokens = machine.stageOne();  
-                
-    //  Muestra de tokens
-    let tokenText = tokens.map(token => 
-    `${token.type}: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
-    ).join('\n');
-                
-    console.log(tokenText);
-                 
-
-    // 2. Análisis Sintáctico
-    const ast = machine.stageTwo();
-                
-    console.log(ast); 
-
-    // 3. Análisis Semántico
-    const semanticResult = machine.stageThree();
+    const result1 = machine.stageOne();
+    console.log(result1);
         
-    // Mostrar resultados
-    if (semanticResult.errors.length > 0) { 
-        alert('Errores semánticos encontrados:\n' + semanticResult.errors.join('\n'));
-        //displayErrors(semanticResult.errors);
-    } else {
-        //displaySymbolTable(semanticResult.symbolTable);
-        console.log(semanticResult);
-        alert('Compilación exitosa sin errores.');
+    // 2. Análisis Sintáctico
+    const result2 = machine.stageTwo();
+    console.log(result2);
+        
+    // 3. Análisis Semántico
+    const result3 = machine.stageThree();
+    console.log(result3);
+        
+    if (machine.hasErrors()) {
+        alert(machine.reportErrors()); 
     }
-
+     
 }
 
 function inicializarEditor() {
