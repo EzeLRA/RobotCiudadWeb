@@ -189,14 +189,6 @@ class Lexer {
         this.position++;
         this.column++;
 
-        /*
-        if (char === ',') {
-            this.tokens.push(new Token(TOKEN_TYPES.OPERATOR,value,this.line,this.column - value.length));
-            
-            return;
-        }
-        */
-
         // Operadores de uno o dos caracteres
         if (this.position < this.source.length) {
             const nextChar = this.source[this.position];

@@ -176,7 +176,7 @@ fin
                     <h2>Procesador lexico</h2>
                 </div>
                 <div class="lexer-list" id="lexerList">
-                    <div class="empty-state">Sin resultados</div>
+                    <div class="empty-state" id="lexerResults">Sin resultados</div>
                 </div>
             </div>
             <div class="section executable-section">
@@ -184,7 +184,7 @@ fin
                     <h2>Procesador parser</h2>
                 </div>
                 <div class="parser-list" id="parserList">
-                    <div class="empty-state">Sin resultados</div>
+                    <div class="empty-state" id="parserResults">Sin resultados</div>
                 </div>
             </div>
             <div class="section executable-section">
@@ -192,7 +192,7 @@ fin
                     <h2>Procesador semantico</h2>
                 </div>
                 <div class="semantic-list" id="semanticList">
-                    <div class="empty-state">Sin resultados</div>
+                    <div class="empty-state" id="semanticResults">Sin resultados</div>
                 </div>
             </div>
         </div>
@@ -205,6 +205,8 @@ fin
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/comment/comment.min.js"></script>
     
     <!-- Codigo JS -->
+    <script src="../compilador/machine.js"></script>
+
     <script src="../compilador/lexer.js"></script>
     <script src="../compilador/lexerUtilities/token.js"></script>
     

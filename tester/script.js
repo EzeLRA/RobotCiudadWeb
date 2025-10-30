@@ -1,6 +1,9 @@
 // Variables globales
 let codeEditor;
 
+//Compiler
+let machine = new Machine();
+
 /*
     Funciones para inicializar y manejar el editor de código.
 */
@@ -95,7 +98,8 @@ function actualizarNombreArchivo(nombre) {
 }
 
 // Función para renderizar los resultados
-function renderCompilerResults(result) {
+function renderCompilerResults() {
+    let result = machine.getResultThree();
     // Actualizar resumen
     document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
     document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
@@ -186,12 +190,43 @@ function renderCompilerResults(result) {
     }
     
     */
+}
+
+// Funciones para mostrar los resultados del proceso de compilacion
+function renderLexerResults() {
+    const lexerResults = document.getElementById('lexerResults');
+
+    const tokenText = machine.simplifyStageOne();
+
+    lexerResults.innerHTML = `<pre>${tokenText}</pre>`;
+    lexerResults.classList.remove('empty-state');
 
 }
 
+function renderParserResults() {
+    const parserResults = document.getElementById('parserResults');
+
+    const result = machine.simplifyStageTwo();
+    
+    parserResults.innerHTML = `<pre class="parser-output">${result}</pre>`;
+    parserResults.classList.remove('empty-state');
+}
+
+function renderSemanticResults() {
+    const semanticAnalizerResults = document.getElementById('semanticResults');
+
+    const result = machine.simplifyStageThree();
+    
+    semanticAnalizerResults.innerHTML = `<pre class="semantic-output">${result}</pre>`;
+    semanticAnalizerResults.classList.remove('empty-state');
+}
+
 // Función para actualizar con nuevos resultados
-function updateCompilerResults(newResult) {
-    renderCompilerResults(newResult);
+function updateCompilerResults() {
+    renderLexerResults();
+    renderParserResults();
+    renderSemanticResults();
+    renderCompilerResults();
 }
 
 // Inicializar cuando el DOM esté listo
@@ -221,44 +256,28 @@ document.addEventListener('DOMContentLoaded', function() {
 function compilar() {
     const sourceCode = codeEditor.getValue();
     
-    try {
-        // 1. Análisis Léxico
-        const lexer = new Lexer(sourceCode);
-        const tokens = lexer.tokenize();   
-                
-        //  Muestra de tokens
-        let tokenText = tokens.map(token => 
-        `${token.type}: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
-        ).join('\n');
-                
-        console.log(tokenText);
-                
+    machine.reset(sourceCode);
 
-        // 2. Análisis Sintáctico
-        const parser = new Parser(tokens);
-        const ast = parser.parse();
-                
-        console.log(ast); //resultado de parser
-
-        // 3. Análisis Semántico
-        const semanticAnalyzer = new SemanticAnalyzer();
-        const semanticResult = semanticAnalyzer.analyze(ast);
+    machine.runAllStages();
+    /*
+    // 1. Análisis Léxico
+    const result1 = machine.stageOne();
+    console.log(result1);
         
-        // Mostrar resultados
-        if (semanticResult.errors.length > 0) { 
-            alert('Errores semánticos encontrados:\n' + semanticResult.errors.join('\n'));
-            //displayErrors(semanticResult.errors);
-        } else {
-            //displaySymbolTable(semanticResult.symbolTable);
-            console.log(semanticResult);
-            console.log(semanticResult.processes); //Contabiliza la cantidad de procesos
-            renderCompilerResults(semanticResult);
-            alert('Compilación exitosa sin errores.');
-        }
+    // 2. Proceso de Parsing
+    const result2 = machine.stageTwo();
+    console.log(result2);
+        
+    // 3. Análisis Semántico
+    const result3 = machine.stageThree();
+    console.log(result3);
+    */
 
-    } catch (error) {
-        alert('Error durante la compilación: ' + error.message);
-        //updateCompilerResults(errorResult);
+    if (machine.hasErrors()) {
+        alert(machine.reportErrors()); 
+    }else{
+        alert("Compilacion terminada");
+        updateCompilerResults();
     }
 }
 

@@ -224,7 +224,7 @@ function compilar() {
     const result1 = machine.stageOne();
     console.log(result1);
         
-    // 2. Análisis Sintáctico
+    // 2. Proceso de Parsing
     const result2 = machine.stageTwo();
     console.log(result2);
         

@@ -65,16 +65,60 @@ class Machine{
 		this.finalReport = null;
 	}
 
+	//Full workflow
+	runAllStages(){
+		this.stageOne();
+		this.stageTwo();
+		this.stageThree();
+	}
+
+	//Check for errors
 	hasErrors(){
 		return this.errors.length > 0;
 	}
 
 	simplifyStageOne(){
 		const tokenText = this.tokensList.map(token => 
-		`${token.type}: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
+		`[${token.type}]: "${token.value}" (Línea ${token.line}, Columna ${token.column})`
 		).join('\n');
                 
     	return tokenText;
+	}
+
+	stringifyResult(source){
+		// Usar JSON.stringify con formato y filtro de propiedades
+		try {
+			const result = JSON.stringify(source, (key, value) => {
+				// Eliminar propiedades del prototipo y referencias circulares
+				if (key === '<prototype>' || key === 'parent' || key === '_parent') {
+					return undefined;
+				}
+				return value;
+			}, 2);
+			return result;
+		}catch(error){
+			return "";
+		}
+	}
+
+	simplifyStageTwo(){
+        return this.stringifyResult(this.parsedSections);
+	}
+
+	simplifyStageThree(){
+		return this.stringifyResult(this.finalReport);
+	}
+
+	getResultOne(){
+		return this.tokensList;
+	}
+
+	getResultTwo(){
+		return this.parsedSections;
+	}
+
+	getResultThree(){
+		return this.finalReport;
 	}
 
 	reportErrors(){
