@@ -259,20 +259,7 @@ function compilar() {
     machine.reset(sourceCode);
 
     machine.runAllStages();
-    /*
-    // 1. Análisis Léxico
-    const result1 = machine.stageOne();
-    console.log(result1);
-        
-    // 2. Proceso de Parsing
-    const result2 = machine.stageTwo();
-    console.log(result2);
-        
-    // 3. Análisis Semántico
-    const result3 = machine.stageThree();
-    console.log(result3);
-    */
-
+    
     if (machine.hasErrors()) {
         alert(machine.reportErrors()); 
     }else{

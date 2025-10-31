@@ -28,7 +28,7 @@
                 </button>
                 <div class="dropdown-content" id="myDropdown">
                     <a href="tester/tester.html">Usar solo el compilador</a>
-                    <a href="#" onclick="toggleTheme()">Cambiar tema</a>
+                    <a href="#" id="theme-toggle-link" onclick="toggleTheme()">Cambiar a Tema Claro</a>
                     <a href="#">Acerca de</a>
                 </div>
             </div>
@@ -264,12 +264,18 @@ fin</code></pre>
             </div>
         </div>
     </div>
+    
     <!-- CodeMirror JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/comment/comment.min.js"></script>
+    
     <!-- Codigo JS -->
+    <script src="./fileManager/FileManager.js"></script>
+
+    <script src="./interpreter/interpreter.js"></script>
+
     <script src="./compilador/machine.js"></script>
     
     <script src="./compilador/lexer.js"></script>
