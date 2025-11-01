@@ -16,8 +16,6 @@ const tamanoActual = document.getElementById('tamano-actual');
 const ventanaPrincipal = document.getElementById('ventana-principal');
 const editorHeader = document.querySelector('.editor-header span');
 
-let codeEditor ;//= CodeMirror.fromTextArea(document.getElementById('seccionCodigo')); // Variable global para el editor CodeMirror
-
 // Variables para la ciudad y el robot
 let ciudad = [];
 let tamañoCiudad = 50;
@@ -37,9 +35,62 @@ let panelContenidoMinimizado = false;
 //Compiler
 let machine = new Machine();
 
+// En tu código principal
+let rinfoEditor;
+
+// Cargar preferencia de tema al iniciar y inicializar la ciudad
+window.addEventListener('DOMContentLoaded', function() {
+    rinfoEditor = new RInfoEditor(
+        'nombre-programa',
+        'seccionCodigo',      // ID del textarea
+        'line-numbers',       // ID del elemento para números de línea
+        'cursor-position',    // ID del elemento para posición del cursor
+        'code-stats'          // ID del elemento para estadísticas
+    );
+    
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        // Buscar el elemento del tema (ajustado para el nuevo ID)
+        const themeToggle = document.getElementById('theme-toggle-link');
+        if (themeToggle) {
+            themeToggle.textContent = 'Cambiar a Tema Oscuro';
+        }
+    }
+            
+    // Cargar estado del panel
+    const savedPanelState = localStorage.getItem('panelMinimizado');
+    if (savedPanelState === 'true') {
+        togglePanel();
+    }
+            
+    // Cargar estado del contenido del panel
+    const savedPanelContentState = localStorage.getItem('panelContenidoMinimizado');
+    if (savedPanelContentState === 'true') {
+        togglePanelContent();
+    }
+            
+    // Inicializar la ciudad
+    inicializarCiudad();
+            
+    // Actualizar el valor del zoom
+    actualizarZoom();
+            
+    // Inicializar el control de velocidad
+    actualizarValorVelocidad();
+    document.getElementById('velocidad').addEventListener('input', actualizarValorVelocidad);
+            
+    // Aplicar el tema correcto al editor
+    if (savedTheme === 'light') {
+        rinfoEditor.setTheme("eclipse");
+    } else {
+        rinfoEditor.setTheme("dracula");
+    }
+});
+
 //Funcion para compilar
 function compilar() {
-    const sourceCode = codeEditor.getValue();
+    const sourceCode = rinfoEditor.getValue();
 
     machine.reset(sourceCode);
 
@@ -47,10 +98,9 @@ function compilar() {
       
     if (machine.hasErrors()) {
         alert(machine.reportErrors()); 
-    }else{
+    } else {
         alert("Compilacion exitosa");
     }
-     
 }
 
 // Función para actualizar el zoom de la ciudad
@@ -95,7 +145,7 @@ function togglePanel() {
             
     // Redimensionar el editor después de cambiar el panel
     setTimeout(function() {
-        if (codeEditor) codeEditor.refresh();
+        if (rinfoEditor) rinfoEditor.refresh();
     }, 300);
 }
 
@@ -372,55 +422,27 @@ function toggleTheme() {
     const themeToggle = document.getElementById('theme-toggle-link');
             
     if (document.body.classList.contains('light-theme')) {
-        themeToggle.textContent = 'Cambiar a Tema Oscuro';
-        codeEditor.setOption("theme", "eclipse");
+        if (themeToggle) {
+            themeToggle.textContent = 'Cambiar a Tema Oscuro';
+        }
+        rinfoEditor.setTheme("eclipse");
         // Guardar preferencia
         localStorage.setItem('theme', 'light');
     } else {
-        themeToggle.textContent = 'Cambiar a Tema Claro';
-        codeEditor.setOption("theme", "dracula");
+        if (themeToggle) {
+            themeToggle.textContent = 'Cambiar a Tema Claro';
+        }
+        rinfoEditor.setTheme("dracula");
         // Guardar preferencia
         localStorage.setItem('theme', 'dark');
     }
 }
 
-// Cargar preferencia de tema al iniciar y inicializar la ciudad
-window.addEventListener('DOMContentLoaded', function() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
-        document.querySelector('.theme-toggle').textContent = 'Tema Oscuro';
-    }
-            
-    // Cargar estado del panel
-    const savedPanelState = localStorage.getItem('panelMinimizado');
-    if (savedPanelState === 'true') {
-        togglePanel();
-    }
-            
-    // Cargar estado del contenido del panel
-    const savedPanelContentState = localStorage.getItem('panelContenidoMinimizado');
-    if (savedPanelContentState === 'true') {
-        togglePanelContent();
-    }
-            
-    // Inicializar la ciudad
-    inicializarCiudad();
-            
-    // Actualizar el valor del zoom
-    actualizarZoom();
-            
-    // Inicializar el editor
-    inicializarEditor();
-            
-    // Inicializar el control de velocidad
-    actualizarValorVelocidad();
-    document.getElementById('velocidad').addEventListener('input', actualizarValorVelocidad);
-            
-    // Aplicar el tema correcto al editor
-    if (savedTheme === 'light') {
-        codeEditor.setOption("theme", "eclipse");
-    } else {
-        codeEditor.setOption("theme", "dracula");
-    }
-});
+// Funciones adicionales que podrías necesitar
+function guardarCodigo() {
+    rinfoEditor.guardarCodigo();
+}
+
+function cargarCodigo() {
+    rinfoEditor.cargarCodigo();
+}
