@@ -17,7 +17,8 @@ class RInfoEditor {
         this.lineNumbersElement = null;
         this.cursorPositionElement = null;
         this.codeStatsElement = null;
-        
+        this.file = new FileManager();
+
         this.initializeCodeMirrorMode();
         this.initializeEditor();
     }
@@ -277,46 +278,11 @@ class RInfoEditor {
     }
 
     guardarCodigo() {
-        const nombreInput = document.getElementById(this.nomProgramId);
-        let nombreArchivo = 'codigo.rinfo';
-        
-        // Obtener el nombre del programa del input
-        if (nombreInput && nombreInput.value.trim() !== '') {
-            // Limpiar el nombre: quitar espacios y caracteres especiales
-            const nombreLimpio = nombreInput.value.trim()
-                .replace(/[^a-zA-Z0-9áéíóúñÑ_\- ]/g, '') // Remover caracteres especiales
-                .replace(/\s+/g, '_'); // Reemplazar espacios con guiones bajos
-            
-            nombreArchivo = `${nombreLimpio}.rinfo`;
-        }
-        
-        const content = rinfoEditor.getValue();
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = nombreArchivo;
-        a.click();
-        URL.revokeObjectURL(url);
+        this.file.guardarCodigo(rinfoEditor.getValue(), 'codigo.rinfo', document.getElementById(this.nomProgramId));
     }
 
     cargarCodigo() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.txt,.rinfo';
-        
-        input.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    this.setValue(event.target.result);
-                };
-                reader.readAsText(file);
-            }
-        };
-        
-        input.click();
+        this.file.cargarCodigo(document.createElement('input'),this, document.getElementById(this.nomProgramId));
     }
 
     // Métodos utilitarios

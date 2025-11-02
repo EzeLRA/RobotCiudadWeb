@@ -35,13 +35,13 @@ let panelContenidoMinimizado = false;
 //Compiler
 let machine = new Machine();
 
-// En tu código principal
+//Interprete del editor RInfo
 let rinfoEditor;
 
 // Cargar preferencia de tema al iniciar y inicializar la ciudad
 window.addEventListener('DOMContentLoaded', function() {
     rinfoEditor = new RInfoEditor(
-        'nombre-programa',
+        'nombre-programa',    // ID del elemento para el nombre del programa
         'seccionCodigo',      // ID del textarea
         'line-numbers',       // ID del elemento para números de línea
         'cursor-position',    // ID del elemento para posición del cursor

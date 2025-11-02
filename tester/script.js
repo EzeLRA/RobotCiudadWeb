@@ -1,5 +1,6 @@
 // Variables globales
 let codeEditor;
+let file = new FileManager();
 
 //Compiler
 let machine = new Machine();
@@ -99,15 +100,32 @@ function actualizarNombreArchivo(nombre) {
 
 // Función para renderizar los resultados
 function renderCompilerResults() {
-    let result = machine.getResultThree();
-    // Actualizar resumen
-    document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
-    document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
-    //document.getElementById('totalConexiones').textContent = result.summary.totalConexiones;
-    document.getElementById('totalAreas').textContent = result.summary.totalAreas;
-    document.getElementById('totalRobots').textContent = result.summary.totalRobots;
-    document.getElementById('totalErrors').textContent = result.summary.totalErrors;
+    const errorList = document.getElementById('errorList');
 
+    if(!machine.hasErrors()){
+        alert('Compilación exitosa sin errores');
+        let result = machine.getResultThree();
+        // Actualizar resumen
+        document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
+        document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
+        //document.getElementById('totalConexiones').textContent = result.summary.totalConexiones;
+        document.getElementById('totalAreas').textContent = result.summary.totalAreas;
+        document.getElementById('totalRobots').textContent = result.summary.totalRobots;
+        document.getElementById('totalErrors').textContent = result.summary.totalErrors;
+
+        errorList.innerHTML = '<div class="empty-state">No se encontraron errores</div>';
+    }else{
+        alert('La compilación terminó con errores');
+        
+        // Renderizar errores
+        errorList.innerHTML = machine.reportErrors().map(error => `
+            <div class="error-item">
+                <div class="error-message">${error}</div>
+            </div>
+        `).join('');
+        
+    }
+    
     /*
 
     // Renderizar llamadas a procesos
@@ -260,168 +278,14 @@ function compilar() {
 
     machine.runAllStages();
     
-    if (machine.hasErrors()) {
-        alert(machine.reportErrors()); 
-    }else{
-        alert("Compilacion terminada");
-        updateCompilerResults();
-    }
+    updateCompilerResults();
 }
 
-// Funciones de archivo (placeholders)
+// Funciones de archivo
 function guardarCodigo() {
-    const codigo = codeEditor.getValue();
-    const nombre = document.getElementById('nombre-programa').value || 'programa';
-    
-    if ('showSaveFilePicker' in window) {
-        guardarConFileSystemAPI(codigo, nombre);
-    } else {
-        // Fallback para navegadores antiguos
-        guardarConDescarga(codigo, nombre);
-    }
-}
-
-// Método moderno con File System Access API
-async function guardarConFileSystemAPI(codigo, fileName) {
-    try {
-        const options = {
-            suggestedName: `${fileName}.rinfo`,
-            types: [
-                {
-                    description: 'Archivos R-Info',
-                    accept: {
-                        'text/plain': ['.rinfo'],
-                    },
-                },
-            ],
-        };
-
-        const fileHandle = await window.showSaveFilePicker(options);
-        
-        // Crear un FileSystemWritableFileStream para escribir
-        const writableStream = await fileHandle.createWritable();
-        
-        // Escribir el contenido
-        await writableStream.write(codigo);
-        
-        // Cerrar el archivo
-        await writableStream.close();
-        
-        console.log('Archivo R-Info guardado:', fileHandle.name);
-        alert(`Archivo guardado correctamente: ${fileHandle.name}`);
-        
-    } catch (error) {
-        if (error.name !== 'AbortError') {
-            console.error('Error al guardar:', error);
-            alert('Error al guardar el archivo: ' + error.message);
-        }
-        // Si es AbortError, el usuario canceló la operación
-    }
-}
-
-// Método de fallback para navegadores antiguos
-function guardarConDescarga(codigo, fileName) {
-    try {
-        // Crear blob con el contenido
-        const blob = new Blob([codigo], { type: 'text/plain' });
-        
-        // Crear URL temporal
-        const url = URL.createObjectURL(blob);
-        
-        // Crear elemento de enlace temporal
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${fileName}.rinfo`;
-        
-        // Simular click para descargar
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Liberar URL
-        URL.revokeObjectURL(url);
-        
-        console.log('Archivo R-Info descargado:', `${fileName}.rinfo`);
-        alert(`Archivo descargado correctamente: ${fileName}.rinfo`);
-        
-    } catch (error) {
-        console.error('Error al descargar:', error);
-        alert('Error al descargar el archivo: ' + error.message);
-    }
+    file.guardarCodigo(codeEditor.getValue(), 'programa', document.getElementById('nombre-programa'));
 }
 
 function cargarCodigo() {
-    if ('showOpenFilePicker' in window) {
-        cargarConFileSystemAPI();
-    } else {
-        cargarConInputArchivo();
-    }
-}
-
-// Función cargarCodigo para actualizar el nombre
-async function cargarConFileSystemAPI() {
-    try {
-        const [fileHandle] = await window.showOpenFilePicker({
-            types: [
-                {
-                    description: 'Archivos R-Info',
-                    accept: {
-                        'text/plain': ['.rinfo'],
-                    },
-                },
-            ],
-            multiple: false
-        });
-
-        const file = await fileHandle.getFile();
-        const contenido = await file.text();
-        
-        // Cargar el contenido en el editor
-        codeEditor.setValue(contenido);
-        
-        // Extraer el nombre del archivo (sin extensión) y actualizar el input
-        const nombreArchivo = file.name.replace('.rinfo', '');
-        actualizarNombreArchivo(nombreArchivo);
-        
-        console.log('Archivo cargado:', file.name);
-        alert(`Archivo cargado correctamente: ${file.name}`);
-        
-    } catch (error) {
-        if (error.name !== 'AbortError') {
-            console.error('Error al cargar:', error);
-            alert('Error al cargar el archivo: ' + error.message);
-        }
-    }
-}
-
-// Función de fallback
-function cargarConInputArchivo() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.rinfo';
-    
-    input.onchange = function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            codeEditor.setValue(e.target.result);
-            
-            // Extraer el nombre del archivo y actualizar el input
-            const nombreArchivo = file.name.replace('.rinfo', '');
-            actualizarNombreArchivo(nombreArchivo);
-            
-            console.log('Archivo cargado:', file.name);
-            alert(`Archivo cargado correctamente: ${file.name}`);
-        };
-        
-        reader.onerror = function() {
-            alert('Error al leer el archivo');
-        };
-        
-        reader.readAsText(file);
-    };
-    
-    input.click();
+    file.cargarCodigo(document.createElement('input'), codeEditor, document.getElementById('nombre-programa'));
 }
