@@ -16,21 +16,11 @@ const tamanoActual = document.getElementById('tamano-actual');
 const ventanaPrincipal = document.getElementById('ventana-principal');
 const editorHeader = document.querySelector('.editor-header span');
 
-// Variables para la ciudad y el robot
-let ciudad = [];
-let tamañoCiudad = 50;
-let zoomCiudad = 10;
-let robot = {
-    x: 0,
-    y: 0,        
-    activo: false,
-    direccion: 'este',
-    objeto: null
-};
-let objetosCiudad = [];
-let intervaloRobot = null;
 let panelMinimizado = false;
 let panelContenidoMinimizado = false;
+
+// Instancia del gestor de la ciudad
+let ciudadManager;
 
 //Compiler
 let machine = new Machine();
@@ -47,6 +37,18 @@ window.addEventListener('DOMContentLoaded', function() {
         'cursor-position',    // ID del elemento para posición del cursor
         'code-stats'          // ID del elemento para estadísticas
     );
+
+    // Inicializar el gestor de ciudad
+    ciudadManager = new CiudadManager(
+        'ciudad-grid',          // ID del grid
+        'robot-status',         // ID del estado del robot
+        'contador-objetos',     // ID del contador general
+        'contador-flores',      // ID del contador de flores
+        'contador-papeles'      // ID del contador de papeles
+    );
+    
+    // Inicializar la ciudad
+    ciudadManager.inicializarCiudad(50);
     
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'light') {
@@ -71,7 +73,7 @@ window.addEventListener('DOMContentLoaded', function() {
     }
             
     // Inicializar la ciudad
-    inicializarCiudad();
+    //inicializarCiudad();
             
     // Actualizar el valor del zoom
     actualizarZoom();
@@ -105,9 +107,18 @@ function compilar() {
 
 // Función para actualizar el zoom de la ciudad
 function actualizarZoom() {
-    zoomCiudad = parseInt(zoomSlider.value);
+    const zoomCiudad = parseInt(zoomSlider.value);
     zoomValue.textContent = zoomCiudad;
-    actualizarEstiloCuadricula();
+    ciudadManager.actualizarZoom(zoomCiudad);
+}
+
+// Función para actualizar el valor de la velocidad
+function actualizarValorVelocidad() {
+    const velocidadSlider = document.getElementById('velocidad');
+    const valorVelocidad = document.getElementById('valor-velocidad');
+    if (velocidadSlider && valorVelocidad) {
+        valorVelocidad.textContent = velocidadSlider.value;
+    }
 }
 
 // Función para actualizar el estilo de la cuadrícula según el zoom
@@ -167,236 +178,25 @@ function togglePanelContent() {
     localStorage.setItem('panelContenidoMinimizado', panelContenidoMinimizado);
 }
 
-// Inicializar la ciudad
-function inicializarCiudad() {
-    const grid = document.getElementById('ciudad-grid');
-    grid.innerHTML = '';
-            
-    ciudad = [];
-    objetosCiudad = [];
-    actualizarContadorObjetos();
-            
-    // Actualizar los valores máximos de los inputs de posición
-    document.getElementById('avenidaPos').max = tamañoCiudad - 1;
-    document.getElementById('callePos').max = tamañoCiudad - 1;
-            
-    // Crear la cuadrícula
-    for (let y = 0; y < tamañoCiudad; y++) {
-        ciudad[y] = [];
-        for (let x = 0; x < tamañoCiudad; x++) {
-            const celda = document.createElement('div');
-            celda.className = 'celda-ciudad';
-                    
-            // Marcar calles y avenidas (cada 10 unidades)
-            if (x === 0 || y === 0 || x === tamañoCiudad - 1 || y === tamañoCiudad - 1) {
-                celda.classList.add('calle');
-            } else if (x % 10 === 0 || y % 10 === 0) {
-                celda.classList.add('avenida');
-            }
-                    
-            celda.dataset.x = x;
-            celda.dataset.y = y;
-            celda.addEventListener('click', () => colocarObjetoEnCelda(x, y));
-                    
-            grid.appendChild(celda);
-            ciudad[y][x] = celda;
-        }
-    }
-            
-    // Actualizar el estilo de la cuadrícula
-    actualizarEstiloCuadricula();
-            
-    // Actualizar el texto del tamaño actual
-    tamanoActual.textContent = `${tamañoCiudad}x${tamañoCiudad}`;
-            
-    // Colocar el robot en la posición inicial
-    colocarRobot(0, 0);
-    actualizarEstadoRobot();
-}
-
-// Colocar el robot en una posición específica
-function colocarRobot(x, y) {
-    // Limpiar la posición anterior del robot
-    document.querySelectorAll('.celda-robot').forEach(celda => {
-        celda.classList.remove('celda-robot');
-        celda.textContent = '';
-    });
-            
-    // Actualizar posición del robot
-    robot.x = x;
-    robot.y = y;
-            
-    // Marcar la nueva posición del robot
-    if (ciudad[y] && ciudad[y][x]) {
-        ciudad[y][x].classList.add('celda-robot');
-        ciudad[y][x].textContent = 'R';
-    }
-            
-    actualizarEstadoRobot();
-}
-
-// Colocar un objeto en una celda específica
-function colocarObjetoEnCelda(x, y) {
-    // No permitir colocar objetos donde está el robot
-    if (x === robot.x && y === robot.y) return;
-            
-    const tipo = document.getElementById('objetosLista').value;
-            
-    // Verificar si ya hay un objeto en esta posición
-    const objetoExistente = objetosCiudad.findIndex(obj => obj.x === x && obj.y === y);
-    if (objetoExistente !== -1) {
-        objetosCiudad.splice(objetoExistente, 1);
-        ciudad[y][x].classList.remove('celda-objeto');
-        ciudad[y][x].removeAttribute('data-tipo');
-    } else {
-        // Agregar nuevo objeto
-        objetosCiudad.push({ tipo, x, y });
-        ciudad[y][x].classList.add('celda-objeto');
-        ciudad[y][x].setAttribute('data-tipo', tipo);
-    }
-            
-    actualizarContadorObjetos();
-    actualizarContadoresObjetos();
-}
-
-// Función para actualizar los contadores de objetos
-function actualizarContadoresObjetos() {
-    const contadorFlores = document.getElementById('contador-flores');
-    const contadorPapeles = document.getElementById('contador-papeles');
-            
-    // Contar flores y papeles
-    const flores = objetosCiudad.filter(obj => obj.tipo === 'flores').length;
-    const papeles = objetosCiudad.filter(obj => obj.tipo === 'papeles').length;
-            
-    // Actualizar los contadores
-    contadorFlores.textContent = flores;
-    contadorPapeles.textContent = papeles;
-}
-
-// Función para actualizar el valor de velocidad visible
-function actualizarValorVelocidad() {
-    const velocidadSlider = document.getElementById('velocidad');
-    const valorVelocidad = document.getElementById('valor-velocidad');
-    valorVelocidad.textContent = velocidadSlider.value;
-}
-
-// Actualizar el contador de objetos
-function actualizarContadorObjetos() {
-    document.getElementById('contador-objetos').textContent = objetosCiudad.length;
-    actualizarContadoresObjetos(); // Llamar a la nueva función
-}
-
-// Eliminar un objeto
-function eliminarObjeto(index) {
-    const obj = objetosCiudad[index];
-    ciudad[obj.y][obj.x].classList.remove('celda-objeto');
-    ciudad[obj.y][obj.x].removeAttribute('data-tipo');
-    objetosCiudad.splice(index, 1);
-            
-    actualizarContadorObjetos();
-    actualizarContadoresObjetos();
-}
-
-// Mover el robot
-function moverRobot(direccion) {
-    if (intervaloRobot) {
-        clearInterval(intervaloRobot);
-        intervaloRobot = null;
-        robot.activo = false;
-        actualizarEstadoRobot();
-        return;
-    }
-            
-    let nuevaX = robot.x;
-    let nuevaY = robot.y;
-            
-    switch(direccion) {
-        case 'arriba':
-            nuevaY = Math.max(0, robot.y - 1);
-            break;
-        case 'abajo':
-            nuevaY = Math.min(tamañoCiudad - 1, robot.y + 1);
-            break;
-        case 'izquierda':
-            nuevaX = Math.max(0, robot.x - 1);
-            break;
-        case 'derecha':
-            nuevaX = Math.min(tamañoCiudad - 1, robot.x + 1);
-            break;
-        case 'detener':
-            robot.activo = false;
-            actualizarEstadoRobot();
-            return;
-    }
-            
-    // Verificar si hay un objeto en la nueva posición
-    const objetoEnCamino = objetosCiudad.find(obj => obj.x === nuevaX && obj.y === nuevaY);
-    if (objetoEnCamino) {
-        // El robot puede recoger el objeto o detenerse
-        if (confirm(`Hay ${objetoEnCamino.tipo} en el camino. ¿Recogerlo?`)) {
-            robot.objeto = objetoEnCamino.tipo;
-            eliminarObjeto(objetosCiudad.indexOf(objetoEnCamino));
-        } else {
-            return; // No moverse si hay un objeto y no se recoge
-        }
-    }
-            
-    colocarRobot(nuevaX, nuevaY);
-}
-
-// Modificar la función agregarObjeto para usar las coordenadas del formulario
-function agregarObjeto() {
-    const tipo = document.getElementById('objetosLista').value;
-    const x = parseInt(document.getElementById('avenidaPos').value);
-    const y = parseInt(document.getElementById('callePos').value);
-    const cantidad = parseInt(document.getElementById('cantidadObjeto').value);
-            
-    // Validar coordenadas
-    if (x < 0 || x >= tamañoCiudad || y < 0 || y >= tamañoCiudad) {
-        alert("Coordenadas fuera de los límites de la ciudad");
-        return;
-    }
-            
-    // No permitir colocar objetos donde está el robot
-    if (x === robot.x && y === robot.y) {
-        alert("No se puede colocar un objeto en la posición del robot");
-        return;
-    }
-            
-    for (let i = 0; i < cantidad; i++) {
-        // Verificar si ya hay un objeto en esta posición
-        const objetoExistente = objetosCiudad.findIndex(obj => obj.x === x && obj.y === y);
-        if (objetoExistente !== -1) {
-            // Reemplazar el objeto existente
-            objetosCiudad[objetoExistente].tipo = tipo;
-            ciudad[y][x].setAttribute('data-tipo', tipo);
-        } else {
-            // Agregar nuevo objeto
-            objetosCiudad.push({ tipo, x, y });
-            ciudad[y][x].classList.add('celda-objeto');
-            ciudad[y][x].setAttribute('data-tipo', tipo);
-        }
-    }
-            
-    actualizarContadorObjetos();
-    actualizarContadoresObjetos();
-}
-
-// Actualizar el estado del robot en la UI
-function actualizarEstadoRobot() {
-    const status = document.getElementById('robot-status');
-    status.textContent = `Robot: ${robot.activo ? 'Activo' : 'Inactivo'} | Posición: (${robot.x}, ${robot.y}) | Objeto: ${robot.objeto || 'Ninguno'}`;
-}
-
-// Cambiar el tamaño de la ciudad
+// Función para cambiar el tamaño de la ciudad
 function cambiarTamanoCiudad() {
-    tamañoCiudad = parseInt(document.getElementById('tamano-ciudad').value);
-    inicializarCiudad();
+    const nuevoTamaño = parseInt(document.getElementById('tamano-ciudad').value);
+    ciudadManager.cambiarTamanoCiudad(nuevoTamaño);
 }
 
-// Reiniciar la ciudad
+// Función para reiniciar la ciudad
 function reiniciarCiudad() {
-    inicializarCiudad();
+    ciudadManager.reiniciarCiudad();
+}
+
+// Función para agregar un objeto a la ciudad
+function agregarObjeto() {
+    ciudadManager.agregarObjeto();
+}
+
+// Función para mover el robot
+function moverRobot(direccion) {
+    ciudadManager.moverRobot(direccion);
 }
 
 // Función para mostrar ayuda
@@ -438,7 +238,7 @@ function toggleTheme() {
     }
 }
 
-// Funciones adicionales que podrías necesitar
+// Funciones para manejo de código
 function guardarCodigo() {
     rinfoEditor.guardarCodigo();
 }
