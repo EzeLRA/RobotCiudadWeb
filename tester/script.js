@@ -232,11 +232,159 @@ function renderParserResults() {
 
 function renderSemanticResults() {
     const semanticAnalizerResults = document.getElementById('semanticResults');
+    const procesosResults = document.getElementById('processList');
 
     const result = machine.simplifyStageThree();
     
     semanticAnalizerResults.innerHTML = `<pre class="semantic-output">${result}</pre>`;
     semanticAnalizerResults.classList.remove('empty-state');
+
+    const result2 = machine.getResultThree();
+    
+    /*
+        Agregar el apartado de variables usados en los procesos
+    */
+
+    if (result2.executable.procesos.length > 0) {
+        procesosResults.innerHTML = `
+            <div class="processes-header">
+                <h3>Procesos Declarados (${result2.executable.procesos.length})</h3>
+                <div class="process-controls">
+                    <button class="btn-expand-all" onclick="expandAllProcesses()">Expandir Todos</button>
+                    <button class="btn-collapse-all" onclick="collapseAllProcesses()">Minimizar Todos</button>
+                </div>
+            </div>
+            <div class="processes-list">
+                ${result2.executable.procesos.map((proceso, index) => `
+                    <div class="process-item" data-process-index="${index}">
+                        <div class="process-header" onclick="toggleProcessDetails(${index})">
+                            <div class="process-name">
+                                <i class="process-icon">⚙️</i> 
+                                <span class="process-title">${proceso.name}</span>
+                                <span class="process-badge">${proceso.instructions.length} instr.</span>
+                            </div>
+                            <div class="process-toggle">
+                                <i class="toggle-icon">▼</i>
+                            </div>
+                        </div>
+                        <div class="process-details">
+                            <div class="detail-section">
+                                <h4>Información del Proceso</h4>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Nombre:</label>
+                                        <span>${proceso.name}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Parámetros:</label>
+                                        <span>${proceso.parameters && proceso.parameters.length > 0 ? 
+                                            proceso.parameters.map(p => 
+                                                typeof p === 'object' ? p.name || p : p
+                                            ).join(', ') : 
+                                            'Ninguno'}</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Total Instrucciones:</label>
+                                        <span>${proceso.instructions.length}</span>
+                                    </div>
+                                    ${proceso.instructionCount ? `
+                                    <div class="detail-item">
+                                        <label>Instrucciones Ejecutables:</label>
+                                        <span>${proceso.instructionCount}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h4>Instrucciones del Proceso</h4>
+                                <div class="instructions-list">
+                                    ${proceso.instructions.map((instruccion, instIndex) => `
+                                        <div class="instruction-item">
+                                            <span class="instruction-number">${instIndex + 1}.</span>
+                                            <span class="instruction-type">${instruccion.type}</span>
+                                            <span class="instruction-content">
+                                                ${instruccion.instruction || instruccion.processName || 'N/A'}
+                                                ${instruccion.parameters && instruccion.parameters.length > 0 ? 
+                                                    `(${instruccion.parameters.join(', ')})` : 
+                                                    ''}
+                                            </span>
+                                            ${instruccion.line !== undefined ? 
+                                                `<span class="instruction-line">Línea ${instruccion.line}</span>` : 
+                                                ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            ${proceso.variables && proceso.variables.length > 0 ? `
+                            <div class="detail-section">
+                                <h4>Variables del Proceso</h4>
+                                <div class="variables-list">
+                                    ${proceso.variables.map(variable => `
+                                        <div class="variable-item">
+                                            <span class="variable-name">${variable.name}</span>
+                                            <span class="variable-type">${variable.type}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        // Inicializar todos los procesos como minimizados
+        setTimeout(() => {
+            collapseAllProcesses();
+        }, 100);
+        
+    } else {
+        procesosResults.innerHTML = '<div class="empty-state">No se declararon procesos</div>';
+    }
+}
+
+// Función para expandir todos los procesos
+function expandAllProcesses() {
+    const processItems = document.querySelectorAll('.process-item');
+    processItems.forEach(item => {
+        const details = item.querySelector('.process-details');
+        const toggleIcon = item.querySelector('.toggle-icon');
+        details.style.display = 'block';
+        toggleIcon.textContent = '▼';
+        item.classList.add('expanded');
+    });
+}
+
+// Función para minimizar todos los procesos
+function collapseAllProcesses() {
+    const processItems = document.querySelectorAll('.process-item');
+    processItems.forEach(item => {
+        const details = item.querySelector('.process-details');
+        const toggleIcon = item.querySelector('.toggle-icon');
+        details.style.display = 'none';
+        toggleIcon.textContent = '▶';
+        item.classList.remove('expanded');
+    });
+}
+
+// Función para alternar la visibilidad de los detalles de un proceso
+function toggleProcessDetails(index) {
+    const processItem = document.querySelector(`[data-process-index="${index}"]`);
+    const processDetails = processItem.querySelector('.process-details');
+    const toggleIcon = processItem.querySelector('.toggle-icon');
+    
+    if (processDetails.style.display === 'none' || processDetails.style.display === '') {
+        processDetails.style.display = 'block';
+        toggleIcon.textContent = '▼';
+        processItem.classList.add('expanded');
+    } else {
+        processDetails.style.display = 'none';
+        toggleIcon.textContent = '▶';
+        processItem.classList.remove('expanded');
+    }
 }
 
 // Función para actualizar con nuevos resultados

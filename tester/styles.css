@@ -266,6 +266,263 @@ body {
     color: #6c757d;
 }
 
+/* Contenedor principal de procesos */
+.processes-list {
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+/* Cabecera de la sección de procesos */
+.processes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 8px 8px 0 0;
+}
+
+.processes-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 16px;
+}
+
+.process-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-expand-all, .btn-collapse-all {
+    padding: 6px 12px;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btn-expand-all:hover, .btn-collapse-all:hover {
+    background: #1976D2;
+}
+
+/* Item de proceso individual */
+.process-item {
+    border-bottom: 1px solid #e0e0e0;
+    background: white;
+}
+
+.process-item:last-child {
+    border-bottom: none;
+    border-radius: 0 0 8px 8px;
+}
+
+.process-item.expanded {
+    background: #f8f9fa;
+}
+
+/* Cabecera del proceso */
+.process-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.process-header:hover {
+    background: #f5f5f5;
+}
+
+.process-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.process-icon {
+    font-size: 18px;
+}
+
+.process-title {
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+}
+
+.process-badge {
+    background: #e3f2fd;
+    color: #1976D2;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.process-toggle {
+    color: #666;
+    transition: transform 0.2s;
+}
+
+.process-item.expanded .process-toggle {
+    transform: rotate(180deg);
+}
+
+/* Detalles del proceso */
+.process-details {
+    display: none;
+    padding: 0 15px 15px 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.detail-section {
+    margin-bottom: 20px;
+}
+
+.detail-section h4 {
+    margin: 0 0 10px 0;
+    color: #555;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Grid de detalles */
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-item label {
+    font-weight: 500;
+    color: #666;
+    font-size: 12px;
+}
+
+.detail-item span {
+    color: #333;
+    font-size: 13px;
+}
+
+/* Lista de instrucciones */
+.instructions-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: white;
+}
+
+.instruction-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f5f5f5;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+.instruction-item:last-child {
+    border-bottom: none;
+}
+
+.instruction-number {
+    color: #999;
+    font-weight: bold;
+    min-width: 20px;
+}
+
+.instruction-type {
+    background: #e3f2fd;
+    color: #1976D2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.instruction-content {
+    flex: 1;
+    color: #333;
+}
+
+.instruction-line {
+    color: #888;
+    font-size: 11px;
+}
+
+/* Lista de variables */
+.variables-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+}
+
+.variable-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.variable-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.variable-type {
+    color: #666;
+    background: #e0e0e0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+}
+
+/* Estado vacío */
+.empty-state {
+    text-align: center;
+    color: #666;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+/* Scrollbar personalizado */
+.processes-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.processes-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.processes-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.processes-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
 .process-list, .variable-list, .area-list, .error-list, .process-call-list {
     max-height: 300px;
     overflow-y: auto;
