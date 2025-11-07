@@ -306,6 +306,7 @@ class SemanticAnalyzer {
             const executableProceso = {
                 name: proceso.name,
                 parameters: proceso.parameters || [],
+                variables: proceso.variables || [],
                 instructions: this.compileInstructions(proceso.body)
             };
             

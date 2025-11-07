@@ -297,6 +297,20 @@ function renderSemanticResults() {
                             </div>
                             
                             <div class="detail-section">
+                                <h4>Variables del Proceso</h4>
+                                ${proceso.variables ? 
+                                    proceso.variables.map(seccion =>
+                                        seccion.declarations.map(variable =>
+                                    `
+                                        <div class="detail-item">
+                                            <span>${variable.name + " : " + variable.variableType}</span>
+                                        </div>
+                                    `).join('')
+                                    )
+                                    : 'No se declararon variables en este proceso'}
+                            </div>
+                            
+                            <div class="detail-section">
                                 <h4>Instrucciones del Proceso</h4>
                                 <div class="instructions-list">
                                     ${proceso.instructions.map((instruccion, instIndex) => `
@@ -317,19 +331,6 @@ function renderSemanticResults() {
                                 </div>
                             </div>
                             
-                            ${proceso.variables && proceso.variables.length > 0 ? `
-                            <div class="detail-section">
-                                <h4>Variables del Proceso</h4>
-                                <div class="variables-list">
-                                    ${proceso.variables.map(variable => `
-                                        <div class="variable-item">
-                                            <span class="variable-name">${variable.name}</span>
-                                            <span class="variable-type">${variable.type}</span>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                            ` : ''}
                         </div>
                     </div>
                 `).join('')}
