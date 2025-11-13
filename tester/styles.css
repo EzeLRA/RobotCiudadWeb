@@ -12,10 +12,9 @@ body {
     padding: 20px;
 }
 
-.compiler-panel {
+.compiler-panel, .compiler-stages-panel {
     max-width: 1400px;
-    margin: 0 auto;
-    margin-bottom: 50px;
+    margin: 0 auto 50px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -23,14 +22,10 @@ body {
 }
 
 .compiler-stages-panel {
-    max-width: 1400px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
+    margin-bottom: 0;
 }
 
+/* ========== HEADER Y ESTADOS ========== */
 .panel-header {
     background: linear-gradient(135deg, #262b53, #4a6491);
     color: white;
@@ -96,7 +91,7 @@ body {
     background-color: #1177bb;
 }
 
-/* Estilos para el editor */
+/* ========== EDITOR DE CÓDIGO ========== */
 .VentanaPrincipal {
     display: flex;
     flex-direction: column;
@@ -202,7 +197,7 @@ body {
     flex-shrink: 0;
 }
 
-/* Estilos para el panel de resultados */
+/* ========== PANEL DE RESULTADOS ========== */
 .panel-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -236,10 +231,6 @@ body {
     gap: 8px;
 }
 
-.section h2 i {
-    font-size: 20px;
-}
-
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -266,37 +257,223 @@ body {
     color: #6c757d;
 }
 
-/* ========== ESTILOS PARA RELACIONES ROBOT-ÁREA ========== */
+/* ========== ESTILOS COMPARTIDOS ========== */
+.processes-header, .robots-header, .relations-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.process-controls, .robot-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-expand-all, .btn-collapse-all {
+    padding: 6px 12px;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.btn-expand-all:hover, .btn-collapse-all:hover {
+    background: #1976D2;
+}
+
+.process-item, .robot-item, .relation-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: white;
+    overflow: hidden;
+}
+
+.process-header, .robot-header, .relation-header {
+    padding: 15px;
+    background: #f8f9fa;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.process-header:hover, .robot-header:hover {
+    background: #e9ecef;
+}
+
+.process-name, .robot-name, .relation-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.process-icon, .robot-icon, .relation-icon {
+    font-size: 1.2em;
+}
+
+.process-title, .robot-title {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.process-badge, .robot-badge {
+    background: #6c757d;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+}
+
+.toggle-icon {
+    transition: transform 0.2s;
+}
+
+.process-item.expanded .toggle-icon,
+.robot-item.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.process-details, .robot-details, .relation-details {
+    padding: 0;
+    display: none;
+}
+
+.process-details .detail-section,
+.robot-details .detail-section,
+.relation-details .detail-section {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.process-details .detail-section:last-child,
+.robot-details .detail-section:last-child,
+.relation-details .detail-section:last-child {
+    border-bottom: none;
+}
+
+.detail-section h4 {
+    margin: 0 0 10px 0;
+    color: #495057;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+}
+
+.detail-item label {
+    font-weight: bold;
+    color: #6c757d;
+    margin-right: 10px;
+}
+
+.variable-name {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.variable-type {
+    font-family: monospace;
+    color: #6c757d;
+}
+
+.variable-value {
+    font-family: monospace;
+    color: #28a745;
+}
+
+.instructions-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: white;
+}
+
+.instruction-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 5px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 4px solid #6c757d;
+}
+
+.instruction-control {
+    border-left-color: #007bff;
+}
+
+.instruction-action {
+    border-left-color: #28a745;
+}
+
+.instruction-number {
+    font-weight: bold;
+    margin-right: 10px;
+    color: #6c757d;
+    min-width: 25px;
+}
+
+.instruction-type {
+    background: #6c757d;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    margin-right: 10px;
+    text-transform: uppercase;
+}
+
+.instruction-content {
+    flex: 1;
+    font-family: monospace;
+}
+
+.instruction-line {
+    color: #6c757d;
+    font-size: 0.8em;
+    margin-left: 10px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-state small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.9em;
+}
+
+/* ========== ESTILOS ESPECÍFICOS PARA RELACIONES ========== */
 .relations-list {
     max-height: 500px;
     overflow-y: auto;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
     background: #fafafa;
-}
-
-.relations-header {
-    padding: 15px;
-    background: #fff;
-    border-bottom: 1px solid #e0e0e0;
-    border-radius: 8px 8px 0 0;
-}
-
-.relations-header h3 {
-    margin: 0;
-    color: #333;
-    font-size: 16px;
-}
-
-.relation-item {
-    border-bottom: 1px solid #e0e0e0;
-    background: white;
-    padding: 15px;
-}
-
-.relation-item:last-child {
-    border-bottom: none;
-    border-radius: 0 0 8px 8px;
 }
 
 .relation-item.relation-error {
@@ -309,22 +486,9 @@ body {
     background: #f8fff8;
 }
 
-.relation-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.relation-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
-}
-
-.relation-icon {
-    font-size: 16px;
+.relation-item.relation-warning {
+    border-left: 4px solid #ff9800;
+    background: #fff8e1;
 }
 
 .robot-name {
@@ -363,45 +527,18 @@ body {
     color: #c62828;
 }
 
-.relation-details {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #f0f0f0;
+.status-warning {
+    background: #fff3e0;
+    color: #f57c00;
 }
 
-.robot-details, .area-details, .instruction-details, .error-details {
-    margin-bottom: 15px;
-}
-
-.robot-details h4, .area-details h4, .instruction-details h4, .error-details h4 {
-    margin: 0 0 8px 0;
-    color: #555;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 8px;
-}
-
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.detail-item label {
-    font-weight: 500;
+.robot-variable {
     color: #666;
-    font-size: 11px;
-    text-transform: uppercase;
-}
-
-.detail-item span {
-    color: #333;
     font-size: 12px;
+    font-style: italic;
+    background: #f5f5f5;
+    padding: 2px 6px;
+    border-radius: 3px;
 }
 
 .instruction-code {
@@ -416,11 +553,6 @@ body {
     align-items: center;
 }
 
-.instruction-line {
-    color: #888;
-    font-size: 11px;
-}
-
 .error-details .error-message {
     color: #d32f2f;
     background: #ffebee;
@@ -430,107 +562,8 @@ body {
     font-size: 12px;
 }
 
-/* ========== ESTILOS PARA LISTA DE PARÁMETROS ========== */
-.parameters-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-.parameter-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
-    background: #f0f7ff;
-    border: 1px solid #d1e9ff;
-    border-radius: 6px;
-}
-
-.parameter-direction {
-    font-size: 11px;
-    font-weight: 600;
-    color: #1976D2;
-}
-
-.parameter-name {
-    font-weight: 500;
-    color: #333;
-    font-size: 13px;
-}
-
-.parameter-type {
-    font-size: 11px;
-    color: #666;
-    background: #e3f2fd;
-    padding: 2px 6px;
-    border-radius: 3px;
-    align-self: flex-start;
-}
-
-/* ========== ESTILOS MEJORADOS PARA VARIABLES ========== */
-.variables-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 8px;
-}
-
-.variable-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
-}
-
-.variable-name {
-    font-weight: 500;
-    color: #333;
-    font-size: 13px;
-}
-
-.variable-type {
-    font-size: 11px;
-    color: #666;
-    background: #e9ecef;
-    padding: 2px 6px;
-    border-radius: 3px;
-    align-self: flex-start;
-}
-
-.variable-status {
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    align-self: flex-start;
-}
-
-.variable-status.initialized {
-    background: #e8f5e8;
-    color: #2e7d32;
-}
-
-.variable-status.uninitialized {
-    background: #fff3e0;
-    color: #f57c00;
-}
-
-/* Estado para variables vacías */
-.empty-variables {
-    text-align: center;
-    color: #666;
-    padding: 20px;
-    font-style: italic;
-    background: #fafafa;
-    border-radius: 4px;
-    border: 1px dashed #e0e0e0;
-}
-
-/* ========== ESTILOS PARA PROCESOS (EXISTENTES MEJORADOS) ========== */
-.processes-list {
+/* ========== ESTILOS PARA LISTAS ========== */
+.processes-list, .robots-list {
     max-height: 600px;
     overflow-y: auto;
     border: 1px solid #e0e0e0;
@@ -538,245 +571,45 @@ body {
     background: #fafafa;
 }
 
-.processes-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background: #fff;
-    border-bottom: 1px solid #e0e0e0;
-    border-radius: 8px 8px 0 0;
+/* ========== SCROLLBAR PERSONALIZADO ========== */
+.processes-list::-webkit-scrollbar,
+.robots-list::-webkit-scrollbar,
+.relations-list::-webkit-scrollbar,
+.instructions-list::-webkit-scrollbar {
+    width: 6px;
 }
 
-.processes-header h3 {
-    margin: 0;
-    color: #333;
-    font-size: 16px;
+.processes-list::-webkit-scrollbar-track,
+.robots-list::-webkit-scrollbar-track,
+.relations-list::-webkit-scrollbar-track,
+.instructions-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
 }
 
-.process-controls {
-    display: flex;
-    gap: 10px;
+.processes-list::-webkit-scrollbar-thumb,
+.robots-list::-webkit-scrollbar-thumb,
+.relations-list::-webkit-scrollbar-thumb,
+.instructions-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
 }
 
-.btn-expand-all, .btn-collapse-all {
-    padding: 6px 12px;
-    background: #2196F3;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
+.processes-list::-webkit-scrollbar-thumb:hover,
+.robots-list::-webkit-scrollbar-thumb:hover,
+.relations-list::-webkit-scrollbar-thumb:hover,
+.instructions-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }
 
-.btn-expand-all:hover, .btn-collapse-all:hover {
-    background: #1976D2;
-}
-
-.process-item {
-    border-bottom: 1px solid #e0e0e0;
-    background: white;
-}
-
-.process-item:last-child {
-    border-bottom: none;
-    border-radius: 0 0 8px 8px;
-}
-
-.process-item.expanded {
-    background: #f8f9fa;
-}
-
-.process-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.process-header:hover {
-    background: #f5f5f5;
-}
-
-.process-name {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-}
-
-.process-icon {
-    font-size: 18px;
-}
-
-.process-title {
-    font-weight: bold;
-    color: #333;
-    font-size: 14px;
-}
-
-.process-badge {
-    background: #e3f2fd;
-    color: #1976D2;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.process-toggle {
-    color: #666;
-    transition: transform 0.2s;
-}
-
-.process-item.expanded .process-toggle {
-    transform: rotate(180deg);
-}
-
-.process-details {
-    display: none;
-    padding: 0 15px 15px 15px;
-    border-top: 1px solid #f0f0f0;
-}
-
-.detail-section {
-    margin-bottom: 20px;
-}
-
-.detail-section h4 {
-    margin: 0 0 10px 0;
-    color: #555;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-/* Grid de detalles mejorado */
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
-    margin-bottom: 15px;
-}
-
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 6px;
-}
-
-.detail-item label {
-    font-weight: 500;
-    color: #666;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.detail-item span {
-    color: #333;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.instructions-list {
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    background: white;
-}
-
-.instruction-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-bottom: 1px solid #f5f5f5;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-}
-
-.instruction-item:last-child {
-    border-bottom: none;
-}
-
-.instruction-number {
-    color: #999;
-    font-weight: bold;
-    min-width: 20px;
-}
-
-.instruction-type {
-    background: #e3f2fd;
-    color: #1976D2;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 10px;
-    font-weight: 500;
-}
-
-.instruction-content {
-    flex: 1;
-    color: #333;
-}
-
-.instruction-line {
-    color: #888;
-    font-size: 11px;
-}
-
-/* ========== ESTILOS EXISTENTES MANTENIDOS ========== */
-.process-list, .variable-list, .area-list, .error-list, .process-call-list {
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.process-item, .variable-item, .area-item, .error-item {
-    background: #f8f9fa;
+/* ========== ESTILOS PARA ERRORES ========== */
+.error-item {
+    background: #fff5f5;
     padding: 15px;
     margin-bottom: 10px;
     border-radius: 6px;
     border: 1px solid #e9ecef;
-}
-
-.process-name, .variable-name, .area-name {
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.process-details, .variable-details, .area-details {
-    font-size: 14px;
-    color: #6c757d;
-}
-
-.param-list, .dimension-list {
-    margin-top: 8px;
-    padding-left: 20px;
-}
-
-.param-item, .dimension-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 4px 0;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.param-item:last-child, .dimension-item:last-child {
-    border-bottom: none;
-}
-
-.error-item {
     border-left: 4px solid #e74c3c;
-    background: #fff5f5;
 }
 
 .error-message {
@@ -784,13 +617,7 @@ body {
     font-weight: 500;
 }
 
-.empty-state {
-    text-align: center;
-    padding: 30px;
-    color: #95a5a6;
-    font-style: italic;
-}
-
+/* ========== ESTILOS PARA CÓDIGO EJECUTABLE ========== */
 .executable-section {
     grid-column: 1 / -1;
 }
@@ -834,67 +661,4 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
-}
-
-.process-call-item {
-    background: #f8f9fa;
-    padding: 12px;
-    margin-bottom: 8px;
-    border-radius: 6px;
-    border: 1px solid #e9ecef;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.call-valid {
-    border-left: 4px solid #27ae60;
-}
-
-.call-invalid {
-    border-left: 4px solid #e74c3c;
-}
-
-.valid-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.valid-true {
-    background: rgba(46, 204, 113, 0.2);
-    color: #27ae60;
-}
-
-.valid-false {
-    background: rgba(231, 76, 60, 0.2);
-    color: #c0392b;
-}
-
-/* Scrollbar personalizado */
-.processes-list::-webkit-scrollbar,
-.relations-list::-webkit-scrollbar,
-.instructions-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.processes-list::-webkit-scrollbar-track,
-.relations-list::-webkit-scrollbar-track,
-.instructions-list::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-}
-
-.processes-list::-webkit-scrollbar-thumb,
-.relations-list::-webkit-scrollbar-thumb,
-.instructions-list::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 3px;
-}
-
-.processes-list::-webkit-scrollbar-thumb:hover,
-.relations-list::-webkit-scrollbar-thumb:hover,
-.instructions-list::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
 }

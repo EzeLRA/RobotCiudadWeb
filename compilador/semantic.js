@@ -12,15 +12,14 @@ class SemanticAnalyzer {
             robots: [],
             procesos: [],
             main: [],
-            variables: new Map()
+            variables: new Map() // Cambiado a Map para mejor manejo
         };
         
-        // NUEVO: Estructuras para rastrear comunicaciones
         this.messageCommunications = {
-            senders: new Map(),     // robot/process -> número de envíos
-            receivers: new Map(),   // robot/process -> número de recepciones
-            connections: new Set(), // pares de comunicación únicos
-            robotCommunications: new Map() // robot -> {sends: number, receives: number}
+            senders: new Map(),
+            receivers: new Map(),
+            connections: new Set(),
+            robotCommunications: new Map()
         };
     }
 
@@ -36,10 +35,9 @@ class SemanticAnalyzer {
             robots: [],
             procesos: [],
             main: [],
-            variables: new Map()
+            variables: new Map() // Mantener como Map
         };
         
-        // NUEVO: Reiniciar estructuras de comunicación
         this.messageCommunications = {
             senders: new Map(),
             receivers: new Map(),
@@ -49,17 +47,31 @@ class SemanticAnalyzer {
         
         this.visitProgram(ast);
         
-        return {
+        // Convertir el Map de variables a objeto para la salida final
+        const result = {
             symbolTable: this.getFormattedSymbolTable(),
             processes: this.getProcessesInfo(),
             processCalls: this.processCalls,
-            executable: this.executableCode,
+            executable: {
+                ...this.executableCode,
+                variables: this.mapToObject(this.executableCode.variables)
+            },
             errors: this.errors,
             success: this.errors.length === 0,
             summary: this.getAnalysisSummary(),
-            // NUEVO: Incluir estadísticas de comunicación
             communicationStats: this.getCommunicationStats()
         };
+        
+        return result;
+    }
+
+    // Método auxiliar para convertir Map a objeto
+    mapToObject(map) {
+        const obj = {};
+        for (let [key, value] of map) {
+            obj[key] = value;
+        }
+        return obj;
     }
 
     // NUEVO: Método para registrar envío de mensajes
@@ -211,7 +223,6 @@ class SemanticAnalyzer {
                 total: stats.total,
                 isCommunicating: stats.total > 0
             })),
-            // NUEVO: Métrica específica solicitada
             totalConexiones: this.calculateTotalConexiones()
         };
     }
@@ -270,12 +281,68 @@ class SemanticAnalyzer {
         node.declarations.forEach(decl => {
             this.declareVariable(decl.name, decl.variableType || decl.type, 'global');
             
-            this.executableCode.variables.set(decl.name, {
+            // NUEVO: Manejo mejorado de variables, especialmente robots
+            const variableInfo = {
                 name: decl.name,
                 type: decl.variableType || decl.type,
-                value: null
-            });
+                value: null,
+                initialized: false
+            };
+            
+            // Si es una variable de tipo robot, buscar el robot correspondiente
+            if ((decl.variableType || decl.type) === 'robot') {
+                const robotName = this.findRobotNameForVariable(decl.name);
+                if (robotName) {
+                    variableInfo.value = robotName;
+                    variableInfo.initialized = true;
+                    
+                    // NUEVO: También agregar referencia inversa en el robot
+                    const robot = this.executableCode.robots.find(r => r.name === robotName);
+                    if (robot) {
+                        robot.variableName = decl.name;
+                    }
+                }
+            }
+            
+            this.executableCode.variables.set(decl.name, variableInfo);
         });
+    }
+
+    // NUEVO: Método para encontrar el nombre del robot asociado a una variable
+    findRobotNameForVariable(variableName) {
+        // Estrategia 1: Buscar en los robots declarados por nombre similar
+        const robots = this.executableCode.robots;
+        
+        // Si la variable se llama igual que un robot, es una coincidencia directa
+        const directMatch = robots.find(robot => robot.name === variableName);
+        if (directMatch) {
+            return directMatch.name;
+        }
+        
+        // Estrategia 2: Buscar por convención de nombres común
+        // Ejemplo: "R_info" -> "robot1", "miRobot" -> "miRobot"
+        const possibleRobotNames = [
+            variableName,
+            variableName.replace('R_', 'robot'),
+            variableName.toLowerCase(),
+            `robot${variableName}`
+        ];
+        
+        for (const possibleName of possibleRobotNames) {
+            const match = robots.find(robot => 
+                robot.name.toLowerCase() === possibleName.toLowerCase()
+            );
+            if (match) {
+                return match.name;
+            }
+        }
+        
+        // Estrategia 3: Si solo hay un robot, usarlo por defecto
+        if (robots.length === 1) {
+            return robots[0].name;
+        }
+        
+        return null;
     }
 
     visitAreasSection(node) {
@@ -331,14 +398,19 @@ class SemanticAnalyzer {
         node.robots.forEach(robot => {
             this.declareVariable(robot.name, 'robot', 'global');
             
-            this.executableCode.robots.push({
+            // NUEVO: Información más completa del robot
+            const robotInfo = {
                 name: robot.name,
                 instructions: this.compileInstructions(robot.body),
                 position: { x: 0, y: 0 },
                 direction: 'este',
                 bag: { flores: 0, papeles: 0 },
-                active: false
-            });
+                active: false,
+                variableName: null, // Se llenará en visitVariablesSection si corresponde
+                area: null // Se asignará cuando se procesen las instrucciones AsignarArea
+            };
+            
+            this.executableCode.robots.push(robotInfo);
             
             this.enterScope(`robot:${robot.name}`);
             this.visitBlock(robot.body);
@@ -349,8 +421,65 @@ class SemanticAnalyzer {
     visitMainBlock(node) {
         this.enterScope('main');
         this.executableCode.main = this.compileInstructions(node.body);
+        
+        // NUEVO: Procesar instrucciones del main para detectar asignaciones de áreas
+        this.processMainInstructionsForAreaAssignment();
+        
         this.visitBlock(node.body);
         this.exitScope();
+    }
+
+    // NUEVO: Método para procesar instrucciones del main y detectar asignaciones de áreas
+    processMainInstructionsForAreaAssignment() {
+        this.executableCode.main.forEach(instruction => {
+            if (instruction.instruction === 'AsignarArea' && 
+                instruction.parameters && 
+                instruction.parameters.length >= 2) {
+                
+                const [variableRobot, areaName] = instruction.parameters;
+                
+                // Buscar la variable para obtener el nombre real del robot
+                const variableInfo = this.executableCode.variables.get(variableRobot);
+                if (variableInfo && variableInfo.type === 'robot' && variableInfo.value) {
+                    const robotName = variableInfo.value;
+                    
+                    // Buscar el robot y asignarle el área
+                    const robot = this.executableCode.robots.find(r => r.name === robotName);
+                    if (robot) {
+                        robot.area = areaName;
+                        
+                        // También actualizar la información de la variable
+                        variableInfo.assignedArea = areaName;
+                    }
+                }
+            }
+            
+            if (instruction.instruction === 'Iniciar' && 
+                instruction.parameters && 
+                instruction.parameters.length >= 3) {
+                
+                const [variableRobot, x, y] = instruction.parameters;
+                
+                // Buscar la variable para obtener el nombre real del robot
+                const variableInfo = this.executableCode.variables.get(variableRobot);
+                if (variableInfo && variableInfo.type === 'robot' && variableInfo.value) {
+                    const robotName = variableInfo.value;
+                    
+                    // Buscar el robot y asignarle la posición inicial
+                    const robot = this.executableCode.robots.find(r => r.name === robotName);
+                    if (robot) {
+                        robot.position = { 
+                            x: parseInt(x) || 0, 
+                            y: parseInt(y) || 0 
+                        };
+                        robot.active = true;
+                        
+                        // También actualizar la información de la variable
+                        variableInfo.initialPosition = { x: parseInt(x) || 0, y: parseInt(y) || 0 };
+                    }
+                }
+            }
+        });
     }
 
     visitBlock(statements) {
@@ -493,7 +622,7 @@ class SemanticAnalyzer {
             this.errors.push(`Instrucción elemental no reconocida: '${node.instruction}'`);
         }
 
-        // NUEVO: Analizar comunicación para instrucciones de mensajes
+        // Analizar comunicación para instrucciones de mensajes
         if (node.instruction === 'EnviarMensaje' || node.instruction === 'RecibirMensaje') {
             this.analyzeMessageCommunication(node);
         }
@@ -805,6 +934,10 @@ class SemanticAnalyzer {
     }
 
     getAnalysisSummary() {
+        // NUEVO: Contar variables de tipo robot
+        const robotVariables = Array.from(this.executableCode.variables.values())
+            .filter(v => v.type === 'robot').length;
+
         return {
             totalInstructions: this.getTotalInstructions(),
             totalProcesses: this.processesInfo.length,
@@ -813,8 +946,8 @@ class SemanticAnalyzer {
             totalErrors: this.errors.length,
             totalVariables: this.getFormattedSymbolTable().length,
             totalRobots: this.executableCode.robots.length,
+            totalRobotVariables: robotVariables, // NUEVO: Variables de tipo robot
             totalAreas: this.executableCode.areas.length,
-            // NUEVO: Incluir totalConexiones en el resumen
             totalConexiones: this.calculateTotalConexiones()
         };
     }
