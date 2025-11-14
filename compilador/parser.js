@@ -153,8 +153,9 @@ class Parser {
         const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
         const varDeclarations = [];
 
+
         if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3'))) {
-            varDeclarations.push(this.parseVariableDeclaration());
+            varDeclarations.push(this.parseVariablesSection());
         }
 
         this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD4'));

@@ -98,13 +98,9 @@ function actualizarNombreArchivo(nombre) {
     }
 }
 
-
-
-
 /*
      Funciones para renderizar resultados
 */
-
 
 function vincularRobotsConAreas(result) {
     if (!result || !result.executable) {
@@ -324,6 +320,21 @@ function vincularRobotsConAreas(result) {
 
 function renderRobotAreaRelations(result) {
     const areasList = document.getElementById('areaList');
+    
+    // Limpiar contenido anterior
+    areasList.innerHTML = '';
+    
+    // Verificar si hay resultados válidos
+    if (!result || !result.executable) {
+        areasList.innerHTML = `
+            <div class="empty-state">
+                <div>Compile para ver las conexiones robot-área</div>
+                <small>Los resultados se mostrarán después de la compilación</small>
+            </div>
+        `;
+        return;
+    }
+
     const relaciones = vincularRobotsConAreas(result);
 
     // Filtrar solo las relaciones que tienen áreas o son relevantes
@@ -335,7 +346,7 @@ function renderRobotAreaRelations(result) {
 
     if (relacionesRelevantes.length > 0) {
         areasList.innerHTML = `
-            <div class="relations-header">
+            <div class="section-header">
                 <h3>Conexiones Robot-Área (${relacionesRelevantes.length})</h3>
                 <div class="relations-stats">
                     ${relaciones.filter(r => r.estado === 'asignado').length} asignadas,
@@ -343,127 +354,129 @@ function renderRobotAreaRelations(result) {
                     ${relaciones.filter(r => r.estado === 'sin_asignar').length} sin asignar
                 </div>
             </div>
-            <div class="relations-list">
-                ${relacionesRelevantes.map((relacion, index) => `
-                    <div class="relation-item ${relacion.estado === 'asignado' ? 'relation-success' : 
-                                              relacion.estado === 'error' ? 'relation-error' : 
-                                              'relation-warning'}">
-                        <div class="relation-header">
-                            <div class="relation-title">
-                                <i class="relation-icon">
-                                    ${relacion.estado === 'asignado' ? '🔗' : 
-                                      relacion.estado === 'error' ? '⚠️' : '❓'}
-                                </i>
-                                ${relacion.variable ? `<span class="variable-name">${relacion.variable}</span>` : ''}
-                                ${relacion.tipoRobot ? `
-                                    <span class="relation-arrow">→</span>
-                                    <span class="robot-type">${relacion.tipoRobot}</span>
+            <div class="relations-content">
+                <div class="relations-list">
+                    ${relacionesRelevantes.map((relacion, index) => `
+                        <div class="relation-item ${relacion.estado === 'asignado' ? 'relation-success' : 
+                                                  relacion.estado === 'error' ? 'relation-error' : 
+                                                  'relation-warning'}">
+                            <div class="relation-header">
+                                <div class="relation-title">
+                                    <i class="relation-icon">
+                                        ${relacion.estado === 'asignado' ? '🔗' : 
+                                          relacion.estado === 'error' ? '⚠️' : '❓'}
+                                    </i>
+                                    ${relacion.variable ? `<span class="variable-name">${relacion.variable}</span>` : ''}
+                                    ${relacion.tipoRobot ? `
+                                        <span class="relation-arrow">→</span>
+                                        <span class="robot-type">${relacion.tipoRobot}</span>
+                                    ` : ''}
+                                    ${relacion.area ? `
+                                        <span class="relation-arrow">→</span>
+                                        <span class="area-name">${relacion.area}</span>
+                                    ` : ''}
+                                </div>
+                                <div class="relation-status ${relacion.estado === 'asignado' ? 'status-success' : 
+                                                             relacion.estado === 'error' ? 'status-error' : 
+                                                             'status-warning'}">
+                                    ${relacion.estado === 'asignado' ? 'Conectado' : 
+                                      relacion.estado === 'error' ? 'Error' : 
+                                      relacion.estado === 'sin_asignar' ? 'Sin asignar' : 
+                                      relacion.estado === 'sin_variables' ? 'Sin variables' : 'Sin robots'}
+                                </div>
+                            </div>
+                            
+                            <div class="relation-details">
+                                ${relacion.tipoConexion ? `
+                                    <div class="connection-type">
+                                        <small>Tipo: ${relacion.tipoConexion.replace(/_/g, ' ')}</small>
+                                    </div>
                                 ` : ''}
-                                ${relacion.area ? `
-                                    <span class="relation-arrow">→</span>
-                                    <span class="area-name">${relacion.area}</span>
+                                
+                                ${relacion.variable ? `
+                                    <div class="variable-details">
+                                        <h4>Variable</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <label>Nombre:</label>
+                                                <span>${relacion.variable}</span>
+                                            </div>
+                                            ${relacion.tipoRobot ? `
+                                            <div class="detail-item">
+                                                <label>Tipo:</label>
+                                                <span>${relacion.tipoRobot}</span>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${relacion.robotInfo ? `
+                                    <div class="robot-details">
+                                        <h4>Robot Declarado</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <label>Nombre:</label>
+                                                <span>${relacion.robotInfo.name}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <label>Instrucciones:</label>
+                                                <span>${relacion.robotInfo.instructions.length}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <label>Posición:</label>
+                                                <span>(${relacion.robotInfo.position.x}, ${relacion.robotInfo.position.y})</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <label>Dirección:</label>
+                                                <span>${relacion.robotInfo.direction}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${relacion.areaInfo ? `
+                                    <div class="area-details">
+                                        <h4>Área</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <label>Nombre:</label>
+                                                <span>${relacion.areaInfo.name}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <label>Tipo:</label>
+                                                <span>${relacion.areaInfo.type}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <label>Dimensiones:</label>
+                                                <span>${relacion.areaInfo.dimensions.join(' x ')}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${relacion.instruccionCompleta ? `
+                                    <div class="instruction-details">
+                                        <h4>Instrucción</h4>
+                                        <div class="instruction-code">
+                                            <code>${relacion.instruccionCompleta}</code>
+                                            ${relacion.instruccionLinea !== null ? 
+                                                `<span class="instruction-line">Línea ${relacion.instruccionLinea}</span>` : 
+                                                ''}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${relacion.error ? `
+                                    <div class="error-details">
+                                        <h4>⚠️ Problema</h4>
+                                        <div class="error-message">${relacion.error}</div>
+                                    </div>
                                 ` : ''}
                             </div>
-                            <div class="relation-status ${relacion.estado === 'asignado' ? 'status-success' : 
-                                                         relacion.estado === 'error' ? 'status-error' : 
-                                                         'status-warning'}">
-                                ${relacion.estado === 'asignado' ? 'Conectado' : 
-                                  relacion.estado === 'error' ? 'Error' : 
-                                  relacion.estado === 'sin_asignar' ? 'Sin asignar' : 
-                                  relacion.estado === 'sin_variables' ? 'Sin variables' : 'Sin robots'}
-                            </div>
                         </div>
-                        
-                        <div class="relation-details">
-                            ${relacion.tipoConexion ? `
-                                <div class="connection-type">
-                                    <small>Tipo: ${relacion.tipoConexion.replace(/_/g, ' ')}</small>
-                                </div>
-                            ` : ''}
-                            
-                            ${relacion.variable ? `
-                                <div class="variable-details">
-                                    <h4>Variable</h4>
-                                    <div class="detail-grid">
-                                        <div class="detail-item">
-                                            <label>Nombre:</label>
-                                            <span>${relacion.variable}</span>
-                                        </div>
-                                        ${relacion.tipoRobot ? `
-                                        <div class="detail-item">
-                                            <label>Tipo:</label>
-                                            <span>${relacion.tipoRobot}</span>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            ${relacion.robotInfo ? `
-                                <div class="robot-details">
-                                    <h4>Robot Declarado</h4>
-                                    <div class="detail-grid">
-                                        <div class="detail-item">
-                                            <label>Nombre:</label>
-                                            <span>${relacion.robotInfo.name}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label>Instrucciones:</label>
-                                            <span>${relacion.robotInfo.instructions.length}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label>Posición:</label>
-                                            <span>(${relacion.robotInfo.position.x}, ${relacion.robotInfo.position.y})</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label>Dirección:</label>
-                                            <span>${relacion.robotInfo.direction}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            ${relacion.areaInfo ? `
-                                <div class="area-details">
-                                    <h4>Área</h4>
-                                    <div class="detail-grid">
-                                        <div class="detail-item">
-                                            <label>Nombre:</label>
-                                            <span>${relacion.areaInfo.name}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label>Tipo:</label>
-                                            <span>${relacion.areaInfo.type}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label>Dimensiones:</label>
-                                            <span>${relacion.areaInfo.dimensions.join(' x ')}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            ${relacion.instruccionCompleta ? `
-                                <div class="instruction-details">
-                                    <h4>Instrucción</h4>
-                                    <div class="instruction-code">
-                                        <code>${relacion.instruccionCompleta}</code>
-                                        ${relacion.instruccionLinea !== null ? 
-                                            `<span class="instruction-line">Línea ${relacion.instruccionLinea}</span>` : 
-                                            ''}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            ${relacion.error ? `
-                                <div class="error-details">
-                                    <h4>⚠️ Problema</h4>
-                                    <div class="error-message">${relacion.error}</div>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `).join('')}
+                    `).join('')}
+                </div>
             </div>
         `;
     } else {
@@ -478,27 +491,24 @@ function renderRobotAreaRelations(result) {
 
 function updateProcesosList(result){
     const procesosResults = document.getElementById('processList');
+    
+    // Limpiar contenido anterior
+    procesosResults.innerHTML = '';
         
-        if (result.executable.procesos.length > 0) {
-            procesosResults.innerHTML = `
-                <div class="processes-header">
-                    <h3>Procesos Declarados (${result.executable.procesos.length})</h3>
-                    <div class="process-controls">
-                        <button class="btn-expand-all" onclick="expandAllProcesses()">Expandir Todos</button>
-                        <button class="btn-collapse-all" onclick="collapseAllProcesses()">Minimizar Todos</button>
-                    </div>
-                </div>
+    if (result.executable.procesos.length > 0) {
+        procesosResults.innerHTML = `
+            <div class="section-header">
+                <h3>Procesos Declarados (${result.executable.procesos.length})</h3>
+            </div>
+            <div class="processes-content">
                 <div class="processes-list">
                     ${result.executable.procesos.map((proceso, index) => `
-                        <div class="process-item" data-process-index="${index}">
-                            <div class="process-header" onclick="toggleProcessDetails(${index})">
+                        <div class="process-item">
+                            <div class="process-header">
                                 <div class="process-name">
                                     <i class="process-icon">⚙️</i> 
                                     <span class="process-title">${proceso.name}</span>
                                     <span class="process-badge">${proceso.instructions.length} instr.</span>
-                                </div>
-                                <div class="process-toggle">
-                                    <i class="toggle-icon">▼</i>
                                 </div>
                             </div>
                             <div class="process-details">
@@ -530,19 +540,19 @@ function updateProcesosList(result){
                                     </div>
                                 </div>
                                 
+                                ${proceso.variables ? `
                                 <div class="detail-section">
                                     <h4>Variables del Proceso</h4>
-                                    ${proceso.variables ? 
-                                        proceso.variables.map(seccion =>
-                                            seccion.declarations.map(variable =>
-                                        `
-                                            <div class="detail-item">
-                                                <span>${variable.name + " : " + variable.variableType}</span>
-                                            </div>
-                                        `).join('')
-                                        )
-                                        : 'No se declararon variables en este proceso'}
+                                    ${proceso.variables.map(seccion =>
+                                        seccion.declarations.map(variable =>
+                                    `
+                                        <div class="detail-item">
+                                            <span>${variable.name + " : " + variable.variableType}</span>
+                                        </div>
+                                    `).join('')
+                                    )}
                                 </div>
+                                ` : ''}
                                 
                                 <div class="detail-section">
                                     <h4>Instrucciones del Proceso</h4>
@@ -564,183 +574,188 @@ function updateProcesosList(result){
                                         `).join('')}
                                     </div>
                                 </div>
-                                
                             </div>
                         </div>
                     `).join('')}
                 </div>
-            `;
-            
-            // Inicializar todos los procesos como minimizados
-            setTimeout(() => {
-                collapseAllProcesses();
-            }, 100);
-            
-        } else {
-            procesosResults.innerHTML = '<div class="empty-state">No se declararon procesos</div>';
-        }
+            </div>
+        `;
+    } else {
+        procesosResults.innerHTML = `
+            <div class="section-header">
+                <h3>Procesos Declarados (0)</h3>
+            </div>
+            <div class="empty-state">No se declararon procesos</div>
+        `;
+    }
 }
 
+// En renderCompilerResults, asegúrate de limpiar antes de mostrar resultados:
+function renderCompilerResults() {
+    const errorList = document.getElementById('errorList');
+
+    if(!machine.hasErrors()){
+        alert('Compilación exitosa sin errores');
+        let result = machine.getResultThree();
+        
+        // Actualiza el resumen
+        document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
+        document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
+        document.getElementById('totalAreas').textContent = result.summary.totalAreas;
+        document.getElementById('totalRobots').textContent = result.summary.totalRobots;
+        document.getElementById('totalErrors').textContent = 0;
+
+        // Limpiar y actualizar cada sección
+        errorList.innerHTML = '<div class="empty-state">No se encontraron errores</div>';
+
+        // Actualizar el apartado de información del programa
+        updateProcesosList(result); // Procesos
+        updateRobotsList(result);   // Robots
+        renderRobotAreaRelations(result); // Areas
+
+    } else {
+        alert('La compilación terminó con errores');
+        
+        const erroresReport = machine.reportErrors();
+
+        document.getElementById('totalErrors').textContent = erroresReport.length;
+
+        // Limpiar y renderizar errores
+        errorList.innerHTML = erroresReport.map(error => `
+            <div class="error-item">
+                <div class="error-message">${error}</div>
+            </div>
+        `).join('');
+        
+        // Limpiar las otras secciones cuando hay errores
+        document.getElementById('processList').innerHTML = '<div class="empty-state">No se puede mostrar procesos debido a errores de compilación</div>';
+        document.getElementById('robotsList').innerHTML = '<div class="empty-state">No se puede mostrar robots debido a errores de compilación</div>';
+        document.getElementById('areaList').innerHTML = '<div class="empty-state">No se puede mostrar áreas debido a errores de compilación</div>';
+    }
+}
+
+// En la función updateRobotsList, cambia la estructura:
 function updateRobotsList(result) {
     const robotsResults = document.getElementById('robotsList');
     
+    // Limpiar completamente el contenido anterior
+    robotsResults.innerHTML = '';
+    
     if (result.executable.robots && result.executable.robots.length > 0) {
         robotsResults.innerHTML = `
-            <div class="robots-header">
-                <h3>Robots Declarados : ${result.executable.robots.length}</h3>
-                <div class="robot-controls">
-                    <button class="btn-expand-all" onclick="expandAllRobots()">Expandir Todos</button>
-                    <button class="btn-collapse-all" onclick="collapseAllRobots()">Minimizar Todos</button>
-                </div>
+            <div class="section-header">
+                <h3>Robots Declarados: ${result.executable.robots.length}</h3>
             </div>
-            <div class="robots-list">
-                ${result.executable.robots.map((robot, index) => `
-                    <div class="robot-item" data-robot-index="${index}">
-                        <div class="robot-header" onclick="toggleRobotDetails(${index})">
-                            <div class="robot-name">
-                                <i class="robot-icon">🤖</i> 
-                                <span class="robot-title">${robot.name}</span>
-                                <span class="robot-badge">${robot.instructions.length} instr.</span>
-                            </div>
-                            <div class="robot-toggle">
-                                <i class="toggle-icon">▼</i>
-                            </div>
-                        </div>
-                        <div class="robot-details">
-                            <div class="detail-section">
-                                <h4>Información del Robot</h4>
-                                <div class="detail-grid">
-                                    <div class="detail-item">
-                                        <label>Nombre:</label>
-                                        <span>${robot.name}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <label>Total Instrucciones:</label>
-                                        <span>${robot.instructions.length}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <label>Posición:</label>
-                                        <span>(${robot.position.x}, ${robot.position.y})</span>
-                                    </div>
+            <div class="robots-content">
+                <div class="robots-list">
+                    ${result.executable.robots.map((robot, index) => `
+                        <div class="robot-item">
+                            <div class="robot-header">
+                                <div class="robot-name">
+                                    <i class="robot-icon">🤖</i> 
+                                    <span class="robot-title">${robot.name}</span>
+                                    <span class="robot-badge">${robot.instructions.length} instr.</span>
                                 </div>
                             </div>
-                        
-                            <div class="detail-section">
-                                <h4>Variables del Robot</h4>
-                                ${robot.variables && robot.variables.length > 0 ? 
-                                    robot.variables.map(variable => `
+                            <div class="robot-details">
+                                <div class="detail-section">
+                                    <h4>Información del Robot</h4>
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label>Nombre:</label>
+                                            <span>${robot.name}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Total Instrucciones:</label>
+                                            <span>${robot.instructions.length}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Posición:</label>
+                                            <span>(${robot.position.x}, ${robot.position.y})</span>
+                                        </div>
+                                        ${robot.direction ? `
+                                        <div class="detail-item">
+                                            <label>Dirección:</label>
+                                            <span>${robot.direction}</span>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            
+                                ${robot.variables && robot.variables.length > 0 ? `
+                                <div class="detail-section">
+                                    <h4>Variables del Robot</h4>
+                                    ${robot.variables.map(variable => `
                                         <div class="detail-item">
                                             <span class="variable-name">${variable.name}</span>
                                             <span class="variable-type">: ${variable.type}</span>
                                             ${variable.value !== undefined ? 
                                                 `<span class="variable-value"> = ${variable.value}</span>` : ''}
                                         </div>
-                                    `).join('') 
-                                    : '<div class="detail-item">No se declararon variables específicas para este robot</div>'
-                                }
-                            </div>
-                            
-                            <div class="detail-section">
-                                <h4>Instrucciones del Robot</h4>
-                                <div class="instructions-list">
-                                    ${robot.instructions.map((instruccion, instIndex) => `
-                                        <div class="instruction-item ${instruccion.type === 'control' ? 'instruction-control' : 
-                                                                     instruccion.type === 'action' ? 'instruction-action' : 
-                                                                     'instruction-basic'}">
-                                            <span class="instruction-number">${instIndex + 1}.</span>
-                                            <span class="instruction-type">${instruccion.type || 'instrucción'}</span>
-                                            <span class="instruction-content">
-                                                ${instruccion.instruction || instruccion.processName || 'N/A'}
-                                                ${instruccion.parameters && instruccion.parameters.length > 0 ? 
-                                                    `(${instruccion.parameters.map(p => 
-                                                        typeof p === 'object' ? JSON.stringify(p) : p
-                                                    ).join(', ')})` : 
-                                                    ''}
-                                            </span>
-                                            ${instruccion.line !== undefined ? 
-                                                `<span class="instruction-line">Línea ${instruccion.line}</span>` : 
-                                                ''}
-                                        </div>
                                     `).join('')}
                                 </div>
-                            </div>
-                            
-                            ${robot.areaInfo ? `
-                            <div class="detail-section">
-                                <h4>Información del Área Asignada</h4>
-                                <div class="detail-grid">
-                                    <div class="detail-item">
-                                        <label>Nombre del Área:</label>
-                                        <span>${robot.areaInfo.name}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <label>Tipo:</label>
-                                        <span>${robot.areaInfo.type}</span>
-                                    </div>
-                                    <div class="detail-item">
-                                        <label>Dimensiones:</label>
-                                        <span>${robot.areaInfo.dimensions.join(' x ')}</span>
+                                ` : ''}
+                                
+                                <div class="detail-section">
+                                    <h4>Instrucciones del Robot</h4>
+                                    <div class="instructions-list">
+                                        ${robot.instructions.map((instruccion, instIndex) => `
+                                            <div class="instruction-item ${instruccion.type === 'control' ? 'instruction-control' : 
+                                                                         instruccion.type === 'action' ? 'instruction-action' : 
+                                                                         'instruction-basic'}">
+                                                <span class="instruction-number">${instIndex + 1}.</span>
+                                                <span class="instruction-type">${instruccion.type || 'instrucción'}</span>
+                                                <span class="instruction-content">
+                                                    ${instruccion.instruction || instruccion.processName || 'N/A'}
+                                                    ${instruccion.parameters && instruccion.parameters.length > 0 ? 
+                                                        `(${instruccion.parameters.map(p => 
+                                                            typeof p === 'object' ? JSON.stringify(p) : p
+                                                        ).join(', ')})` : 
+                                                        ''}
+                                                </span>
+                                                ${instruccion.line !== undefined ? 
+                                                    `<span class="instruction-line">Línea ${instruccion.line}</span>` : 
+                                                    ''}
+                                            </div>
+                                        `).join('')}
                                     </div>
                                 </div>
+                                
+                                ${robot.areaInfo ? `
+                                <div class="detail-section">
+                                    <h4>Información del Área Asignada</h4>
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label>Nombre del Área:</label>
+                                            <span>${robot.areaInfo.name}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Tipo:</label>
+                                            <span>${robot.areaInfo.type}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Dimensiones:</label>
+                                            <span>${robot.areaInfo.dimensions.join(' x ')}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
                             </div>
-                            ` : ''}
                         </div>
-                    </div>
-                `).join('')}
+                    `).join('')}
+                </div>
             </div>
         `;
-        
-        // Inicializar todos los robots como minimizados
-        setTimeout(() => {
-            collapseAllRobots();
-        }, 100);
-        
     } else {
         robotsResults.innerHTML = `
+            <div class="section-header">
+                <h3>Robots Declarados: 0</h3>
+            </div>
             <div class="empty-state">
                 <div>No se declararon robots</div>
                 <small>Define robots en la sección correspondiente del programa</small>
             </div>
         `;
-    }
-}
-
-// Funciones para manejar la expansión/colapso de robots
-function expandAllRobots() {
-    const robotItems = document.querySelectorAll('.robot-item');
-    robotItems.forEach(item => {
-        const details = item.querySelector('.robot-details');
-        const toggleIcon = item.querySelector('.toggle-icon');
-        details.style.display = 'block';
-        toggleIcon.textContent = '▼';
-        item.classList.add('expanded');
-    });
-}
-
-function collapseAllRobots() {
-    const robotItems = document.querySelectorAll('.robot-item');
-    robotItems.forEach(item => {
-        const details = item.querySelector('.robot-details');
-        const toggleIcon = item.querySelector('.toggle-icon');
-        details.style.display = 'none';
-        toggleIcon.textContent = '▶';
-        item.classList.remove('expanded');
-    });
-}
-
-function toggleRobotDetails(index) {
-    const robotItem = document.querySelector(`[data-robot-index="${index}"]`);
-    const robotDetails = robotItem.querySelector('.robot-details');
-    const toggleIcon = robotItem.querySelector('.toggle-icon');
-    
-    if (robotDetails.style.display === 'none' || robotDetails.style.display === '') {
-        robotDetails.style.display = 'block';
-        toggleIcon.textContent = '▼';
-        robotItem.classList.add('expanded');
-    } else {
-        robotDetails.style.display = 'none';
-        toggleIcon.textContent = '▶';
-        robotItem.classList.remove('expanded');
     }
 }
 
@@ -754,7 +769,6 @@ function renderCompilerResults() {
         
         document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
         document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
-        //document.getElementById('totalConexiones').textContent = result.summary.totalConexiones;
         document.getElementById('totalAreas').textContent = result.summary.totalAreas;
         document.getElementById('totalRobots').textContent = result.summary.totalRobots;
         document.getElementById('totalErrors').textContent = 0;
@@ -781,70 +795,6 @@ function renderCompilerResults() {
         `).join('');
         
     }
-    
-    /*
-
-    // Renderizar llamadas a procesos
-    const processCallList = document.getElementById('processCallList');
-    if (result.processCalls && result.processCalls.length > 0) {
-        processCallList.innerHTML = result.processCalls.map(call => `
-            <div class="process-call-item ${call.isValid ? 'call-valid' : 'call-invalid'}">
-                <div>
-                    <strong>${call.name}</strong>
-                    <div class="process-details">
-                        Parámetros: [${call.parameters.join(', ')}]
-                        ${call.line !== 'desconocida' ? ` • Línea: ${call.line}` : ''}
-                    </div>
-                </div>
-                <div class="valid-badge ${call.isValid ? 'valid-true' : 'valid-false'}">
-                    ${call.isValid ? 'Válida' : 'Inválida'}
-                </div>
-            </div>
-        `).join('');
-    } else {
-        processCallList.innerHTML = '<div class="empty-state">No se realizaron llamadas a procesos</div>';
-    }
-
-    // Renderizar áreas
-    const areaList = document.getElementById('areaList');
-    if (result.executable.areas && result.executable.areas.length > 0) {
-        areaList.innerHTML = result.executable.areas.map(area => `
-            <div class="area-item">
-                <div class="area-name">
-                    <i>🗺️</i> ${area.name}
-                </div>
-                <div class="area-details">
-                    <div><strong>Tipo:</strong> ${area.type}</div>
-                    <div><strong>Dimensiones:</strong> ${area.dimensions.join(' x ')}</div>
-                    <div><strong>Límites:</strong> (${area.bounds.x1}, ${area.bounds.y1}) a (${area.bounds.x2}, ${area.bounds.y2})</div>
-                </div>
-            </div>
-        `).join('');
-    } else {
-        areaList.innerHTML = '<div class="empty-state">No se declararon áreas</div>';
-    }
-
-    // Renderizar errores
-    const errorList = document.getElementById('errorList');
-    if (result.errors && result.errors.length > 0) {
-        errorList.innerHTML = result.errors.map(error => `
-            <div class="error-item">
-                <div class="error-message">${error}</div>
-            </div>
-        `).join('');
-    } else {
-        errorList.innerHTML = '<div class="empty-state">No se encontraron errores</div>';
-    }
-
-    // Renderizar código ejecutable
-    const executableCode = document.getElementById('executableCode');
-    if (result.executable) {
-        executableCode.textContent = JSON.stringify(result.executable, null, 2);
-    } else {
-        executableCode.textContent = "No se generó código ejecutable";
-    }
-    
-    */
 }
 
 // Funciones para mostrar los resultados del proceso de compilacion
@@ -908,55 +858,29 @@ function cargarCodigo() {
     file.cargarCodigo(document.createElement('input'), codeEditor, document.getElementById('nombre-programa'));
 }
 
-
-/*
-    Funciones mecanicas
-*/
-
-// Función para expandir todos los procesos
-function expandAllProcesses() {
-    const processItems = document.querySelectorAll('.process-item');
-    processItems.forEach(item => {
-        const details = item.querySelector('.process-details');
-        const toggleIcon = item.querySelector('.toggle-icon');
-        details.style.display = 'block';
-        toggleIcon.textContent = '▼';
-        item.classList.add('expanded');
-    });
-}
-
-// Función para minimizar todos los procesos
-function collapseAllProcesses() {
-    const processItems = document.querySelectorAll('.process-item');
-    processItems.forEach(item => {
-        const details = item.querySelector('.process-details');
-        const toggleIcon = item.querySelector('.toggle-icon');
-        details.style.display = 'none';
-        toggleIcon.textContent = '▶';
-        item.classList.remove('expanded');
-    });
-}
-
-// Función para alternar la visibilidad de los detalles de un proceso
-function toggleProcessDetails(index) {
-    const processItem = document.querySelector(`[data-process-index="${index}"]`);
-    const processDetails = processItem.querySelector('.process-details');
-    const toggleIcon = processItem.querySelector('.toggle-icon');
-    
-    if (processDetails.style.display === 'none' || processDetails.style.display === '') {
-        processDetails.style.display = 'block';
-        toggleIcon.textContent = '▼';
-        processItem.classList.add('expanded');
-    } else {
-        processDetails.style.display = 'none';
-        toggleIcon.textContent = '▶';
-        processItem.classList.remove('expanded');
-    }
-}
-
-// Inicializar cuando el DOM esté listo
+// Al inicializar, limpiar todos los contenedores de resultados
 document.addEventListener('DOMContentLoaded', function() {
     inicializarEditor();
+    
+    // Limpiar contenedores al cargar y establecer contenido inicial
+    const containers = [
+        { id: 'robotsList', message: 'Compile el código para ver los robots' },
+        { id: 'processList', message: 'Compile el código para ver los procesos' },
+        { id: 'areaList', message: 'Compile el código para ver las áreas' },
+        { id: 'errorList', message: 'No hay errores' }
+    ];
+    
+    containers.forEach(container => {
+        const element = document.getElementById(container.id);
+        if (element) {
+            element.innerHTML = `
+                <div class="empty-state">
+                    <div>${container.message}</div>
+                    <small>Los resultados se mostrarán después de la compilación</small>
+                </div>
+            `;
+        }
+    });
     
     // Configurar toggle para código ejecutable
     document.getElementById('toggleExecutable').addEventListener('click', function() {
