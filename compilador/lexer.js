@@ -67,7 +67,7 @@ class Lexer {
             if (this.source[this.position] === ' ') {
                 indent++;
             } else if (this.source[this.position] === '\t') {
-                indent += 4; // o tu tamaño de tab preferido
+                indent += 4;
             }
             this.position++;
             this.column++;

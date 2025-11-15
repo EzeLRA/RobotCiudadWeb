@@ -467,7 +467,7 @@ class Parser {
 
     parseRepeatStatement() {
         this.consume(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE4'));
-        const count = this.consume(TOKEN_TYPES.NUM).value;
+        const count = this.parseExpression();
         const body = this.parseBlock();
 
         return {
@@ -483,8 +483,8 @@ class Parser {
         while (!this.isAtEnd() && 
                !this.match(TOKEN_TYPES.INDENT) && 
                !this.match(TOKEN_TYPES.CONTROL_SENTENCE) && 
-               !this.match(TOKEN_TYPES.ELEMENTAL_INSTRUCTION) && 
-               !this.match(TOKEN_TYPES.IDENTIFIER)) {
+               //!this.match(TOKEN_TYPES.ELEMENTAL_INSTRUCTION) && 
+               !this.match(TOKEN_TYPES.IDENTIFIER) ) {
             
             condition += this.currentToken.value + ' ';
             this.advance();
