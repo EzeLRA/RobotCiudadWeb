@@ -1,5 +1,9 @@
 class SemanticAnalyzer {
     constructor() {
+        this.resetState();
+    }
+
+    resetState() {
         this.symbolTable = new Map();
         this.scopeStack = [new Map()];
         this.errors = [];
@@ -12,7 +16,7 @@ class SemanticAnalyzer {
             robots: [],
             procesos: [],
             main: [],
-            variables: new Map() // Cambiado a Map para mejor manejo
+            variables: new Map()
         };
         
         this.messageCommunications = {
@@ -24,33 +28,12 @@ class SemanticAnalyzer {
     }
 
     analyze(ast) {
-        this.symbolTable.clear();
-        this.errors = [];
-        this.scopeStack = [new Map()];
-        this.processesInfo = [];
-        this.processCalls = [];
-        this.executableCode = {
-            programa: '',
-            areas: [],
-            robots: [],
-            procesos: [],
-            main: [],
-            variables: new Map() // Mantener como Map
-        };
-        
-        this.messageCommunications = {
-            senders: new Map(),
-            receivers: new Map(),
-            connections: new Set(),
-            robotCommunications: new Map()
-        };
-        
+        this.resetState();
         this.visitProgram(ast);
         
-        // Convertir el Map de variables a objeto para la salida final
-        const result = {
+        return {
             symbolTable: this.getFormattedSymbolTable(),
-            processes: this.getProcessesInfo(),
+            processes: this.processesInfo,
             processCalls: this.processCalls,
             executable: {
                 ...this.executableCode,
@@ -61,216 +44,28 @@ class SemanticAnalyzer {
             summary: this.getAnalysisSummary(),
             communicationStats: this.getCommunicationStats()
         };
-        
-        return result;
     }
 
-    // Método auxiliar para convertir Map a objeto
-    mapToObject(map) {
-        const obj = {};
-        for (let [key, value] of map) {
-            obj[key] = value;
-        }
-        return obj;
-    }
+    // ========== MÉTODOS PRINCIPALES DE ANÁLISIS ==========
 
-    // NUEVO: Método para registrar envío de mensajes
-    registerMessageSend(sender, target = null) {
-        const senderName = this.getCurrentEntityName();
-        
-        // Registrar envío del sender
-        const currentSends = this.messageCommunications.senders.get(senderName) || 0;
-        this.messageCommunications.senders.set(senderName, currentSends + 1);
-        
-        // Registrar comunicación si hay un target específico
-        if (target) {
-            const connectionKey = `${senderName}->${target}`;
-            this.messageCommunications.connections.add(connectionKey);
-        }
-        
-        // Actualizar estadísticas del robot/proceso actual
-        this.updateRobotCommunicationStats(senderName, 'send');
-    }
-
-    // NUEVO: Método para registrar recepción de mensajes
-    registerMessageReceive(receiver, source = null) {
-        const receiverName = this.getCurrentEntityName();
-        
-        // Registrar recepción del receiver
-        const currentReceives = this.messageCommunications.receivers.get(receiverName) || 0;
-        this.messageCommunications.receivers.set(receiverName, currentReceives + 1);
-        
-        // Registrar comunicación si hay un source específico
-        if (source) {
-            const connectionKey = `${source}->${receiverName}`;
-            this.messageCommunications.connections.add(connectionKey);
-        }
-        
-        // Actualizar estadísticas del robot/proceso actual
-        this.updateRobotCommunicationStats(receiverName, 'receive');
-    }
-
-    // NUEVO: Obtener el nombre de la entidad actual (robot o proceso)
-    getCurrentEntityName() {
-        if (this.currentScope.startsWith('robot:')) {
-            return this.currentScope.replace('robot:', '');
-        } else if (this.currentScope.startsWith('proceso:')) {
-            return this.currentScope.replace('proceso:', '');
-        } else if (this.currentScope === 'main') {
-            return 'main';
-        }
-        return 'global';
-    }
-
-    // NUEVO: Actualizar estadísticas de comunicación por robot
-    updateRobotCommunicationStats(entityName, type) {
-        if (!this.messageCommunications.robotCommunications.has(entityName)) {
-            this.messageCommunications.robotCommunications.set(entityName, {
-                sends: 0,
-                receives: 0,
-                total: 0
-            });
-        }
-        
-        const stats = this.messageCommunications.robotCommunications.get(entityName);
-        if (type === 'send') {
-            stats.sends++;
-        } else if (type === 'receive') {
-            stats.receives++;
-        }
-        stats.total = stats.sends + stats.receives;
-    }
-
-    // NUEVO: Método para analizar comunicaciones en instrucciones de mensajes
-    analyzeMessageCommunication(node) {
-        const currentEntity = this.getCurrentEntityName();
-        
-        if (node.instruction === 'EnviarMensaje') {
-            // Registrar envío de mensaje
-            let target = null;
-            if (node.parameters && node.parameters.length > 0) {
-                // El primer parámetro podría ser el destinatario
-                target = this.extractParameterValue(node.parameters[0]);
-            }
-            this.registerMessageSend(currentEntity, target);
-            
-        } else if (node.instruction === 'RecibirMensaje') {
-            // Registrar recepción de mensaje
-            let source = null;
-            if (node.parameters && node.parameters.length > 0) {
-                // El primer parámetro podría ser el remitente
-                source = this.extractParameterValue(node.parameters[0]);
-            }
-            this.registerMessageReceive(currentEntity, source);
-        }
-    }
-
-    // NUEVO: Extraer valor de parámetro para análisis de comunicación
-    extractParameterValue(param) {
-        if (typeof param === 'string') {
-            return param;
-        } else if (param && param.value !== undefined) {
-            return param.value.toString();
-        } else if (param && param.name) {
-            return param.name;
-        }
-        return null;
-    }
-
-    // NUEVO: Obtener estadísticas de comunicación
-    getCommunicationStats() {
-        const totalSends = Array.from(this.messageCommunications.senders.values())
-            .reduce((sum, count) => sum + count, 0);
-        const totalReceives = Array.from(this.messageCommunications.receivers.values())
-            .reduce((sum, count) => sum + count, 0);
-        
-        // Calcular robots que participaron en comunicación bidireccional
-        const communicatingRobots = new Set();
-        
-        // Robots que enviaron mensajes
-        this.messageCommunications.senders.forEach((count, robot) => {
-            if (count > 0) {
-                communicatingRobots.add(robot);
-            }
-        });
-        
-        // Robots que recibieron mensajes
-        this.messageCommunications.receivers.forEach((count, robot) => {
-            if (count > 0) {
-                communicatingRobots.add(robot);
-            }
-        });
-        
-        // Calcular conexiones efectivas (donde hay tanto envío como recepción)
-        const effectiveConnections = Array.from(this.messageCommunications.connections)
-            .filter(conn => {
-                const [sender, receiver] = conn.split('->');
-                return this.messageCommunications.receivers.has(receiver) && 
-                       this.messageCommunications.receivers.get(receiver) > 0;
-            });
-        
-        return {
-            totalSends,
-            totalReceives,
-            totalConnections: this.messageCommunications.connections.size,
-            effectiveConnections: effectiveConnections.length,
-            communicatingEntities: Array.from(communicatingRobots),
-            totalCommunicatingRobots: communicatingRobots.size,
-            byRobot: Array.from(this.messageCommunications.robotCommunications.entries()).map(([name, stats]) => ({
-                name,
-                sends: stats.sends,
-                receives: stats.receives,
-                total: stats.total,
-                isCommunicating: stats.total > 0
-            })),
-            totalConexiones: this.calculateTotalConexiones()
-        };
-    }
-
-    // NUEVO: Calcular el total de conexiones según la especificación
-    calculateTotalConexiones() {
-        const communicatingEntities = new Set();
-        
-        // Contar robots que tienen comunicación bidireccional efectiva
-        this.messageCommunications.robotCommunications.forEach((stats, entity) => {
-            // Un robot tiene conexión si envió mensajes Y hay receptores para esos mensajes
-            if (stats.sends > 0) {
-                // Verificar si hay algún receptor para los mensajes de este robot
-                let hasReceiver = false;
-                this.messageCommunications.connections.forEach(conn => {
-                    if (conn.startsWith(`${entity}->`)) {
-                        const receiver = conn.split('->')[1];
-                        if (this.messageCommunications.receivers.has(receiver) && 
-                            this.messageCommunications.receivers.get(receiver) > 0) {
-                            hasReceiver = true;
-                        }
-                    }
-                });
-                
-                if (hasReceiver) {
-                    communicatingEntities.add(entity);
-                }
-            }
-        });
-        
-        return communicatingEntities.size;
-    }
-    
     visitProgram(node) {
         this.enterScope('global');
         this.executableCode.programa = node.name;
         
+        const sectionHandlers = {
+            'VariablesSection': (section) => this.visitVariablesSection(section),
+            'ProcesosSection': (section) => this.visitProcesosSection(section),
+            'RobotsSection': (section) => this.visitRobotsSection(section),
+            'MainBlock': (section) => this.visitMainBlock(section),
+            'AreasSection': (section) => this.visitAreasSection(section)
+        };
+
         node.body.forEach(section => {
-            if (section.type === 'VariablesSection') {
-                this.visitVariablesSection(section);
-            } else if (section.type === 'ProcesosSection') {
-                this.visitProcesosSection(section);
-            } else if (section.type === 'RobotsSection') {
-                this.visitRobotsSection(section);
-            } else if (section.type === 'MainBlock') {
-                this.visitMainBlock(section);
-            } else if (section.type === 'AreasSection') {
-                this.visitAreasSection(section);
+            const handler = sectionHandlers[section.type];
+            if (handler) {
+                handler(section);
+            } else {
+                this.errors.push(`Sección no reconocida: ${section.type}`);
             }
         });
         
@@ -281,7 +76,6 @@ class SemanticAnalyzer {
         node.declarations.forEach(decl => {
             this.declareVariable(decl.name, decl.variableType || decl.type, 'global');
             
-            // NUEVO: Manejo mejorado de variables, especialmente robots
             const variableInfo = {
                 name: decl.name,
                 type: decl.variableType || decl.type,
@@ -289,60 +83,12 @@ class SemanticAnalyzer {
                 initialized: false
             };
             
-            // Si es una variable de tipo robot, buscar el robot correspondiente
-            if ((decl.variableType || decl.type) === 'robot') {
-                const robotName = this.findRobotNameForVariable(decl.name);
-                if (robotName) {
-                    variableInfo.value = robotName;
-                    variableInfo.initialized = true;
-                    
-                    // NUEVO: También agregar referencia inversa en el robot
-                    const robot = this.executableCode.robots.find(r => r.name === robotName);
-                    if (robot) {
-                        robot.variableName = decl.name;
-                    }
-                }
+            if (variableInfo.type === 'robot') {
+                this.processRobotVariable(decl.name, variableInfo);
             }
             
             this.executableCode.variables.set(decl.name, variableInfo);
         });
-    }
-
-    // NUEVO: Método para encontrar el nombre del robot asociado a una variable
-    findRobotNameForVariable(variableName) {
-        // Estrategia 1: Buscar en los robots declarados por nombre similar
-        const robots = this.executableCode.robots;
-        
-        // Si la variable se llama igual que un robot, es una coincidencia directa
-        const directMatch = robots.find(robot => robot.name === variableName);
-        if (directMatch) {
-            return directMatch.name;
-        }
-        
-        // Estrategia 2: Buscar por convención de nombres común
-        // Ejemplo: "R_info" -> "robot1", "miRobot" -> "miRobot"
-        const possibleRobotNames = [
-            variableName,
-            variableName.replace('R_', 'robot'),
-            variableName.toLowerCase(),
-            `robot${variableName}`
-        ];
-        
-        for (const possibleName of possibleRobotNames) {
-            const match = robots.find(robot => 
-                robot.name.toLowerCase() === possibleName.toLowerCase()
-            );
-            if (match) {
-                return match.name;
-            }
-        }
-        
-        // Estrategia 3: Si solo hay un robot, usarlo por defecto
-        if (robots.length === 1) {
-            return robots[0].name;
-        }
-        
-        return null;
     }
 
     visitAreasSection(node) {
@@ -398,7 +144,6 @@ class SemanticAnalyzer {
         node.robots.forEach(robot => {
             this.declareVariable(robot.name, 'robot', 'global');
             
-            // NUEVO: Información más completa del robot
             const robotInfo = {
                 name: robot.name,
                 instructions: this.compileInstructions(robot.body),
@@ -406,8 +151,8 @@ class SemanticAnalyzer {
                 direction: 'este',
                 bag: { flores: 0, papeles: 0 },
                 active: false,
-                variableName: null, // Se llenará en visitVariablesSection si corresponde
-                area: null // Se asignará cuando se procesen las instrucciones AsignarArea
+                variableName: null,
+                area: null
             };
             
             this.executableCode.robots.push(robotInfo);
@@ -422,111 +167,42 @@ class SemanticAnalyzer {
         this.enterScope('main');
         this.executableCode.main = this.compileInstructions(node.body);
         
-        // NUEVO: Procesar instrucciones del main para detectar asignaciones de áreas
-        this.processMainInstructionsForAreaAssignment();
-        
+        this.processMainInstructions();
         this.visitBlock(node.body);
         this.exitScope();
     }
 
-    // NUEVO: Método para procesar instrucciones del main y detectar asignaciones de áreas
-    processMainInstructionsForAreaAssignment() {
-        this.executableCode.main.forEach(instruction => {
-            if (instruction.instruction === 'AsignarArea' && 
-                instruction.parameters && 
-                instruction.parameters.length >= 2) {
-                
-                const [variableRobot, areaName] = instruction.parameters;
-                
-                // Buscar la variable para obtener el nombre real del robot
-                const variableInfo = this.executableCode.variables.get(variableRobot);
-                if (variableInfo && variableInfo.type === 'robot' && variableInfo.value) {
-                    const robotName = variableInfo.value;
-                    
-                    // Buscar el robot y asignarle el área
-                    const robot = this.executableCode.robots.find(r => r.name === robotName);
-                    if (robot) {
-                        robot.area = areaName;
-                        
-                        // También actualizar la información de la variable
-                        variableInfo.assignedArea = areaName;
-                    }
-                }
-            }
-            
-            if (instruction.instruction === 'Iniciar' && 
-                instruction.parameters && 
-                instruction.parameters.length >= 3) {
-                
-                const [variableRobot, x, y] = instruction.parameters;
-                
-                // Buscar la variable para obtener el nombre real del robot
-                const variableInfo = this.executableCode.variables.get(variableRobot);
-                if (variableInfo && variableInfo.type === 'robot' && variableInfo.value) {
-                    const robotName = variableInfo.value;
-                    
-                    // Buscar el robot y asignarle la posición inicial
-                    const robot = this.executableCode.robots.find(r => r.name === robotName);
-                    if (robot) {
-                        robot.position = { 
-                            x: parseInt(x) || 0, 
-                            y: parseInt(y) || 0 
-                        };
-                        robot.active = true;
-                        
-                        // También actualizar la información de la variable
-                        variableInfo.initialPosition = { x: parseInt(x) || 0, y: parseInt(y) || 0 };
-                    }
-                }
-            }
-        });
-    }
+    // ========== MÉTODOS DE VISITACIÓN DE STATEMENTS ==========
 
     visitBlock(statements) {
-        statements.forEach(stmt => {
-            this.visitStatement(stmt);
-        });
+        statements.forEach(stmt => this.visitStatement(stmt));
     }
 
     visitStatement(node) {
-        switch (node.type) {
-            case 'VariableDeclaration':
-                this.visitVariableDeclaration(node);
-                break;
-            case 'IfStatement':
-                this.visitIfStatement(node);
-                break;
-            case 'WhileStatement':
-                this.visitWhileStatement(node);
-                break;
-            case 'RepeatStatement':
-                this.visitRepeatStatement(node);
-                break;
-            case 'Assignment':
-                this.visitAssignment(node);
-                break;
-            case 'ProcessCall':
-                this.visitProcessCall(node);
-                break;
-            case 'ElementalInstruction':
-                this.visitElementalInstruction(node);
-                break;
-            case 'AreaDefinition':
-                this.visitAreaDefinition(node);
-                break;
-            default:
-                this.errors.push(`Tipo de statement no reconocido: ${node.type}`);
+        const statementHandlers = {
+            'VariableDeclaration': () => this.visitVariableDeclaration(node),
+            'IfStatement': () => this.visitIfStatement(node),
+            'WhileStatement': () => this.visitWhileStatement(node),
+            'RepeatStatement': () => this.visitRepeatStatement(node),
+            'Assignment': () => this.visitAssignment(node),
+            'ProcessCall': () => this.visitProcessCall(node),
+            'ElementalInstruction': () => this.visitElementalInstruction(node),
+            'AreaDefinition': () => this.visitAreaDefinition(node)
+        };
+
+        const handler = statementHandlers[node.type];
+        if (handler) {
+            handler();
+        } else {
+            this.errors.push(`Tipo de statement no reconocido: ${node.type}`);
         }
     }
 
     visitVariableDeclaration(node) {
-        if (node.declarations) {
-            node.declarations.forEach(decl => {
-                this.declareVariable(decl.name, decl.type, this.currentScope);
-            });
-        } else {
-            this.declareVariable(node.name, node.variableType, this.currentScope);
-        }
+        const declarations = node.declarations || [node];
+        declarations.forEach(decl => {
+            this.declareVariable(decl.name, decl.type || decl.variableType, this.currentScope);
+        });
     }
 
     visitIfStatement(node) {
@@ -550,10 +226,8 @@ class SemanticAnalyzer {
     }
 
     visitRepeatStatement(node) {
-        if (node.count && node.count.value !== undefined) {
-            if (node.count.value <= 0) {
-                this.errors.push(`El contador de repetición debe ser mayor a 0`);
-            }
+        if (node.count?.value !== undefined && node.count.value <= 0) {
+            this.errors.push(`El contador de repetición debe ser mayor a 0`);
         }
         
         this.enterScope('repeat');
@@ -562,7 +236,7 @@ class SemanticAnalyzer {
     }
 
     visitAssignment(node) {
-        if (node.left && node.left.name) {
+        if (node.left?.name) {
             const variable = this.lookupVariable(node.left.name);
             if (!variable) {
                 this.errors.push(`Variable '${node.left.name}' no declarada`);
@@ -577,12 +251,14 @@ class SemanticAnalyzer {
     }
 
     visitProcessCall(node) {
-        this.processCalls.push({
+        const processCall = {
             name: node.name,
             parameters: node.parameters || [],
             line: node.line || 'desconocida',
             isValid: false
-        });
+        };
+
+        this.processCalls.push(processCall);
 
         const process = this.lookupProcess(node.name);
         if (!process) {
@@ -590,39 +266,24 @@ class SemanticAnalyzer {
             return;
         }
 
-        const callIndex = this.processCalls.length - 1;
-        this.processCalls[callIndex].isValid = true;
-
-        const expectedParams = process.parameters ? process.parameters.length : 0;
-        const actualParams = node.parameters ? node.parameters.length : 0;
-        
-        if (actualParams !== expectedParams) {
-            this.errors.push(`Número incorrecto de parámetros para '${node.name}'. Esperados: ${expectedParams}, obtenidos: ${actualParams}`);
-            this.processCalls[callIndex].isValid = false;
-        }
-
-        if (node.parameters) {
-            node.parameters.forEach((param, index) => {
-                this.visitParameter(param, node.name, index);
-            });
-        }
+        processCall.isValid = true;
+        this.validateProcessCallParameters(node, process);
     }
 
     visitElementalInstruction(node) {
-        const validInstructions = [
+        const validInstructions = new Set([
             'Iniciar', 'derecha', 'mover', 'tomarFlor', 'tomarPapel',
             'depositarFlor', 'depositarPapel', 'PosAv', 'PosCa',
             'HayFlorEnLaBolsa', 'HayPapelEnLaBolsa', 'HayFlorEnLaEsquina', 
             'HayPapelEnLaEsquina', 'Pos', 'Informar', 'AsignarArea',
             'Random', 'BloquearEsquina', 'LiberarEsquina',
             'EnviarMensaje', 'RecibirMensaje'
-        ];
+        ]);
 
-        if (!validInstructions.includes(node.instruction)) {
+        if (!validInstructions.has(node.instruction)) {
             this.errors.push(`Instrucción elemental no reconocida: '${node.instruction}'`);
         }
 
-        // Analizar comunicación para instrucciones de mensajes
         if (node.instruction === 'EnviarMensaje' || node.instruction === 'RecibirMensaje') {
             this.analyzeMessageCommunication(node);
         }
@@ -635,13 +296,13 @@ class SemanticAnalyzer {
     }
 
     visitAreaDefinition(node) {
-        const validAreaTypes = ['AreaC', 'AreaPC', 'AreaP'];
+        const validAreaTypes = new Set(['AreaC', 'AreaPC', 'AreaP']);
         
-        if (!validAreaTypes.includes(node.areaType)) {
+        if (!validAreaTypes.has(node.areaType)) {
             this.errors.push(`Tipo de área no reconocido: '${node.areaType}'`);
         }
 
-        if (node.dimensions && node.dimensions.length !== 4) {
+        if (node.dimensions?.length !== 4) {
             this.errors.push(`El área '${node.name}' debe tener exactamente 4 dimensiones`);
         }
 
@@ -654,13 +315,14 @@ class SemanticAnalyzer {
         }
     }
 
+    // ========== MÉTODOS DE VISITACIÓN DE EXPRESIONES ==========
+
     visitCondition(node) {
-        if (node && node.expression) {
-            const expr = node.expression;
-            const words = expr.split(/\s+/);
+        if (node?.expression) {
+            const words = node.expression.split(/\s+/);
             words.forEach(word => {
-                if (!this.isOperator(word) && !this.isKeyword(word) && !this.isNumber(word) && 
-                    this.isIdentifier(word) && !this.lookupVariable(word)) {
+                if (this.isIdentifier(word) && !this.isOperator(word) && !this.isKeyword(word) && 
+                    !this.isNumber(word) && !this.lookupVariable(word)) {
                     this.errors.push(`Variable '${word}' no declarada en condición`);
                 }
             });
@@ -670,23 +332,18 @@ class SemanticAnalyzer {
     visitExpression(node) {
         if (!node) return;
         
-        switch (node.type) {
-            case 'Identifier':
-                this.visitIdentifier(node);
-                break;
-            case 'Literal':
-                this.visitLiteral(node);
-                break;
-            case 'BinaryExpression':
-                this.visitBinaryExpression(node);
-                break;
-            case 'UnaryExpression':
-                this.visitUnaryExpression(node);
-                break;
-            default:
-                if (node.value !== undefined) {
-                    this.visitLiteral(node);
-                }
+        const expressionHandlers = {
+            'Identifier': () => this.visitIdentifier(node),
+            'Literal': () => this.visitLiteral(node),
+            'BinaryExpression': () => this.visitBinaryExpression(node),
+            'UnaryExpression': () => this.visitUnaryExpression(node)
+        };
+
+        const handler = expressionHandlers[node.type];
+        if (handler) {
+            handler();
+        } else if (node.value !== undefined) {
+            this.visitLiteral(node);
         }
     }
 
@@ -709,8 +366,8 @@ class SemanticAnalyzer {
         this.visitExpression(node.left);
         this.visitExpression(node.right);
         
-        const validOperators = ['+', '-', '*', '/', '==', '!=', '<', '>', '<=', '>=', '&', '|'];
-        if (!validOperators.includes(node.operator)) {
+        const validOperators = new Set(['+', '-', '*', '/', '==', '!=', '<', '>', '<=', '>=', '&', '|']);
+        if (!validOperators.has(node.operator)) {
             this.errors.push(`Operador no válido: '${node.operator}'`);
         }
     }
@@ -718,43 +375,94 @@ class SemanticAnalyzer {
     visitUnaryExpression(node) {
         this.visitExpression(node.argument);
         
-        const validOperators = ['-', '!', '~'];
-        if (!validOperators.includes(node.operator)) {
+        const validOperators = new Set(['-', '!', '~']);
+        if (!validOperators.has(node.operator)) {
             this.errors.push(`Operador unario no válido: '${node.operator}'`);
         }
     }
 
     visitParameter(param, context, index = -1) {
         if (typeof param === 'string') {
-            if (isNaN(param)) {
-                const variable = this.lookupVariable(param);
-                if (!variable) {
-                    const contextStr = index >= 0 ? `parámetro ${index + 1} de ${context}` : context;
-                    this.errors.push(`Variable '${param}' no declarada (en ${contextStr})`);
-                }
+            if (isNaN(param) && !this.lookupVariable(param)) {
+                const contextStr = index >= 0 ? `parámetro ${index + 1} de ${context}` : context;
+                this.errors.push(`Variable '${param}' no declarada (en ${contextStr})`);
             }
         } else if (typeof param === 'object') {
             this.visitExpression(param);
         }
     }
 
-    // Métodos de compilación para código ejecutable
+    // ========== MÉTODOS DE COMUNICACIÓN DE MENSAJES ==========
+
+    analyzeMessageCommunication(node) {
+        const currentEntity = this.getCurrentEntityName();
+        
+        if (node.instruction === 'EnviarMensaje') {
+            const target = node.parameters?.[0] ? this.extractParameterValue(node.parameters[0]) : null;
+            this.registerMessageSend(currentEntity, target);
+        } else if (node.instruction === 'RecibirMensaje') {
+            const source = node.parameters?.[0] ? this.extractParameterValue(node.parameters[0]) : null;
+            this.registerMessageReceive(currentEntity, source);
+        }
+    }
+
+    registerMessageSend(sender, target = null) {
+        const senderName = this.getCurrentEntityName();
+        
+        const currentSends = this.messageCommunications.senders.get(senderName) || 0;
+        this.messageCommunications.senders.set(senderName, currentSends + 1);
+        
+        if (target) {
+            const connectionKey = `${senderName}->${target}`;
+            this.messageCommunications.connections.add(connectionKey);
+        }
+        
+        this.updateRobotCommunicationStats(senderName, 'send');
+    }
+
+    registerMessageReceive(receiver, source = null) {
+        const receiverName = this.getCurrentEntityName();
+        
+        const currentReceives = this.messageCommunications.receivers.get(receiverName) || 0;
+        this.messageCommunications.receivers.set(receiverName, currentReceives + 1);
+        
+        if (source) {
+            const connectionKey = `${source}->${receiverName}`;
+            this.messageCommunications.connections.add(connectionKey);
+        }
+        
+        this.updateRobotCommunicationStats(receiverName, 'receive');
+    }
+
+    updateRobotCommunicationStats(entityName, type) {
+        if (!this.messageCommunications.robotCommunications.has(entityName)) {
+            this.messageCommunications.robotCommunications.set(entityName, {
+                sends: 0,
+                receives: 0,
+                total: 0
+            });
+        }
+        
+        const stats = this.messageCommunications.robotCommunications.get(entityName);
+        if (type === 'send') stats.sends++;
+        else if (type === 'receive') stats.receives++;
+        stats.total = stats.sends + stats.receives;
+    }
+
+    // ========== MÉTODOS DE COMPILACIÓN ==========
+
     compileInstructions(statements) {
         return statements.map(statement => {
-            switch (statement.type) {
-                case 'ElementalInstruction':
-                    return this.compileElementalInstruction(statement);
-                case 'ProcessCall':
-                    return this.compileProcessCall(statement);
-                case 'IfStatement':
-                    return this.compileIfStatement(statement);
-                case 'WhileStatement':
-                    return this.compileWhileStatement(statement);
-                case 'RepeatStatement':
-                    return this.compileRepeatStatement(statement);
-                default:
-                    return { type: 'unknown', original: statement };
-            }
+            const instructionHandlers = {
+                'ElementalInstruction': () => this.compileElementalInstruction(statement),
+                'ProcessCall': () => this.compileProcessCall(statement),
+                'IfStatement': () => this.compileIfStatement(statement),
+                'WhileStatement': () => this.compileWhileStatement(statement),
+                'RepeatStatement': () => this.compileRepeatStatement(statement)
+            };
+
+            const handler = instructionHandlers[statement.type];
+            return handler ? handler() : { type: 'unknown', original: statement };
         });
     }
 
@@ -804,6 +512,108 @@ class SemanticAnalyzer {
         };
     }
 
+    // ========== MÉTODOS AUXILIARES ==========
+
+    processRobotVariable(variableName, variableInfo) {
+        const robotName = this.findRobotNameForVariable(variableName);
+        if (robotName) {
+            variableInfo.value = robotName;
+            variableInfo.initialized = true;
+            
+            const robot = this.executableCode.robots.find(r => r.name === robotName);
+            if (robot) {
+                robot.variableName = variableName;
+            }
+        }
+    }
+
+    findRobotNameForVariable(variableName) {
+        const robots = this.executableCode.robots;
+        
+        // Coincidencia directa
+        const directMatch = robots.find(robot => robot.name === variableName);
+        if (directMatch) return directMatch.name;
+        
+        // Estrategias de búsqueda
+        const possibleNames = [
+            variableName,
+            variableName.replace('R_', 'robot'),
+            variableName.toLowerCase(),
+            `robot${variableName}`
+        ];
+        
+        for (const name of possibleNames) {
+            const match = robots.find(robot => 
+                robot.name.toLowerCase() === name.toLowerCase()
+            );
+            if (match) return match.name;
+        }
+        
+        // Único robot disponible
+        return robots.length === 1 ? robots[0].name : null;
+    }
+
+    processMainInstructions() {
+        this.executableCode.main.forEach(instruction => {
+            if (instruction.instruction === 'AsignarArea' && instruction.parameters?.length >= 2) {
+                this.processAreaAssignment(instruction);
+            } else if (instruction.instruction === 'Iniciar' && instruction.parameters?.length >= 3) {
+                this.processRobotInitialization(instruction);
+            }
+        });
+    }
+
+    processAreaAssignment(instruction) {
+        const [variableRobot, areaName] = instruction.parameters;
+        const variableInfo = this.executableCode.variables.get(variableRobot);
+        
+        if (variableInfo && variableInfo.value) {
+            const robot = this.executableCode.robots.find(r => r.name === variableInfo.value);
+            if (robot) {
+                robot.area = areaName;
+                variableInfo.assignedArea = areaName;
+            }
+        }
+    }
+
+    processRobotInitialization(instruction) {
+        const [variableRobot, x, y] = instruction.parameters;
+        const variableInfo = this.executableCode.variables.get(variableRobot);
+        
+        if (variableInfo && variableInfo.value) {
+            const robot = this.executableCode.robots.find(r => r.name === variableInfo.value);
+            if (robot) {
+                robot.position = { 
+                    x: parseInt(x) || 0, 
+                    y: parseInt(y) || 0 
+                };
+                robot.active = true;
+                variableInfo.initialPosition = { x: parseInt(x) || 0, y: parseInt(y) || 0 };
+            }
+        }
+    }
+
+    validateProcessCallParameters(node, process) {
+        const expectedParams = process.parameters?.length || 0;
+        const actualParams = node.parameters?.length || 0;
+        
+        if (actualParams !== expectedParams) {
+            this.errors.push(`Número incorrecto de parámetros para '${node.name}'. Esperados: ${expectedParams}, obtenidos: ${actualParams}`);
+            this.processCalls[this.processCalls.length - 1].isValid = false;
+        }
+
+        node.parameters?.forEach((param, index) => {
+            this.visitParameter(param, node.name, index);
+        });
+    }
+
+    extractParameterValue(param) {
+        if (typeof param === 'string') return param;
+        if (param?.value !== undefined) return param.value.toString();
+        if (param?.name) return param.name;
+        return null;
+    }
+
     calculateAreaBounds(dimensions) {
         if (!dimensions || dimensions.length !== 4) {
             return { x1: 0, y1: 0, x2: 99, y2: 99 };
@@ -817,25 +627,7 @@ class SemanticAnalyzer {
         };
     }
 
-    // Métodos auxiliares
-    isOperator(word) {
-        return /^[+\-*/=<>!&|,:~]$/.test(word);
-    }
-
-    isKeyword(word) {
-        const keywords = ['si', 'sino', 'mientras', 'repetir', 'proceso', 'robot', 'variables', 
-                         'numero', 'booleano', 'comenzar', 'fin', 'programa', 'procesos', 
-                         'areas', 'robots', 'V', 'F'];
-        return keywords.includes(word);
-    }
-
-    isNumber(word) {
-        return /^\d+$/.test(word);
-    }
-
-    isIdentifier(word) {
-        return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(word);
-    }
+    // ========== MÉTODOS DE GESTIÓN DE ÁMBITOS Y VARIABLES ==========
 
     enterScope(scopeName) {
         this.scopeStack.push(new Map());
@@ -856,8 +648,8 @@ class SemanticAnalyzer {
             this.errors.push(`Variable '${name}' ya declarada en este ámbito`);
         } else {
             currentScope.set(name, { 
-                type: type, 
-                scope: scope, 
+                type, 
+                scope, 
                 initialized: type !== 'robot'
             });
             
@@ -888,9 +680,22 @@ class SemanticAnalyzer {
         return this.scopeStack[0].get(`process:${name}`);
     }
 
+    // ========== MÉTODOS DE INFORMES Y ESTADÍSTICAS ==========
+
+    getCurrentEntityName() {
+        if (this.currentScope.startsWith('robot:')) {
+            return this.currentScope.replace('robot:', '');
+        } else if (this.currentScope.startsWith('proceso:')) {
+            return this.currentScope.replace('proceso:', '');
+        } else if (this.currentScope === 'main') {
+            return 'main';
+        }
+        return 'global';
+    }
+
     getFormattedSymbolTable() {
         const result = [];
-        this.scopeStack.forEach((scope, index) => {
+        this.scopeStack.forEach(scope => {
             scope.forEach((value, key) => {
                 if (!key.startsWith('process:') && key !== '_scopeName') {
                     result.push({
@@ -905,36 +710,21 @@ class SemanticAnalyzer {
         return result;
     }
 
-    getProcessesInfo() {
-        return this.processesInfo;
+    getTotalInstructionsProcesos() {
+        return this.processesInfo.reduce((total, p) => total + p.bodyStatements, 0);
     }
 
-    getTotalInstructionsProcesos(){
-        let total = 0;
-        for (let p of this.processesInfo) {
-            total += p.bodyStatements;
-        }
-        return total;
-    }
-
-    getTotalInstructionsRobots(){
-        let total = 0;
-        for (let r of this.executableCode.robots) {
-            for (let instr of r.instructions){
-                if (instr.type != 'process_call') {
-                    total += 1;
-                }
-            }
-        }
-        return total;
+    getTotalInstructionsRobots() {
+        return this.executableCode.robots.reduce((total, r) => {
+            return total + r.instructions.filter(instr => instr.type !== 'process_call').length;
+        }, 0);
     }
 
     getTotalInstructions() {
-        return this.getTotalInstructionsProcesos() + this.getTotalInstructionsRobots() ;
+        return this.getTotalInstructionsProcesos() + this.getTotalInstructionsRobots();
     }
 
     getAnalysisSummary() {
-        // NUEVO: Contar variables de tipo robot
         const robotVariables = Array.from(this.executableCode.variables.values())
             .filter(v => v.type === 'robot').length;
 
@@ -946,9 +736,101 @@ class SemanticAnalyzer {
             totalErrors: this.errors.length,
             totalVariables: this.getFormattedSymbolTable().length,
             totalRobots: this.executableCode.robots.length,
-            totalRobotVariables: robotVariables, // NUEVO: Variables de tipo robot
+            totalRobotVariables: robotVariables,
             totalAreas: this.executableCode.areas.length,
             totalConexiones: this.calculateTotalConexiones()
         };
+    }
+
+    getCommunicationStats() {
+        const totalSends = Array.from(this.messageCommunications.senders.values())
+            .reduce((sum, count) => sum + count, 0);
+        const totalReceives = Array.from(this.messageCommunications.receivers.values())
+            .reduce((sum, count) => sum + count, 0);
+        
+        const communicatingRobots = new Set([
+            ...this.messageCommunications.senders.keys(),
+            ...this.messageCommunications.receivers.keys()
+        ]);
+
+        const effectiveConnections = Array.from(this.messageCommunications.connections)
+            .filter(conn => {
+                const [, receiver] = conn.split('->');
+                return this.messageCommunications.receivers.has(receiver) && 
+                       this.messageCommunications.receivers.get(receiver) > 0;
+            });
+
+        return {
+            totalSends,
+            totalReceives,
+            totalConnections: this.messageCommunications.connections.size,
+            effectiveConnections: effectiveConnections.length,
+            communicatingEntities: Array.from(communicatingRobots),
+            totalCommunicatingRobots: communicatingRobots.size,
+            byRobot: Array.from(this.messageCommunications.robotCommunications.entries()).map(([name, stats]) => ({
+                name,
+                sends: stats.sends,
+                receives: stats.receives,
+                total: stats.total,
+                isCommunicating: stats.total > 0
+            })),
+            totalConexiones: this.calculateTotalConexiones()
+        };
+    }
+
+    calculateTotalConexiones() {
+        const communicatingEntities = new Set();
+        
+        this.messageCommunications.robotCommunications.forEach((stats, entity) => {
+            if (stats.sends > 0) {
+                let hasReceiver = false;
+                this.messageCommunications.connections.forEach(conn => {
+                    if (conn.startsWith(`${entity}->`)) {
+                        const receiver = conn.split('->')[1];
+                        if (this.messageCommunications.receivers.has(receiver) && 
+                            this.messageCommunications.receivers.get(receiver) > 0) {
+                            hasReceiver = true;
+                        }
+                    }
+                });
+                
+                if (hasReceiver) {
+                    communicatingEntities.add(entity);
+                }
+            }
+        });
+        
+        return communicatingEntities.size;
+    }
+
+    mapToObject(map) {
+        const obj = {};
+        for (let [key, value] of map) {
+            obj[key] = value;
+        }
+        return obj;
+    }
+
+    // ========== MÉTODOS DE VALIDACIÓN ==========
+
+    isOperator(word) {
+        return /^[+\-*/=<>!&|,:~]$/.test(word);
+    }
+
+    isKeyword(word) {
+        const keywords = new Set([
+            'si', 'sino', 'mientras', 'repetir', 'proceso', 'robot', 'variables', 
+            'numero', 'booleano', 'comenzar', 'fin', 'programa', 'procesos', 
+            'areas', 'robots', 'V', 'F'
+        ]);
+        return keywords.has(word);
+    }
+
+    isNumber(word) {
+        return /^\d+$/.test(word);
+    }
+
+    isIdentifier(word) {
+        return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(word);
     }
 }

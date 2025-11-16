@@ -427,10 +427,6 @@ function renderRobotAreaRelations(result) {
                                                 <label>Posición:</label>
                                                 <span>(${relacion.robotInfo.position.x}, ${relacion.robotInfo.position.y})</span>
                                             </div>
-                                            <div class="detail-item">
-                                                <label>Dirección:</label>
-                                                <span>${relacion.robotInfo.direction}</span>
-                                            </div>
                                         </div>
                                     </div>
                                 ` : ''}
@@ -669,16 +665,6 @@ function updateRobotsList(result) {
                                             <label>Total Instrucciones:</label>
                                             <span>${robot.instructions.length}</span>
                                         </div>
-                                        <div class="detail-item">
-                                            <label>Posición:</label>
-                                            <span>(${robot.position.x}, ${robot.position.y})</span>
-                                        </div>
-                                        ${robot.direction ? `
-                                        <div class="detail-item">
-                                            <label>Dirección:</label>
-                                            <span>${robot.direction}</span>
-                                        </div>
-                                        ` : ''}
                                     </div>
                                 </div>
                             

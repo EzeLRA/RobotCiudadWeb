@@ -4,13 +4,26 @@ class Parser {
         this.position = 0;
         this.currentToken = this.tokens[0];
         this.indentLevel = 0;
-        this.procesosNames = [];
+        this.procesosNames = new Set();
         
-        // Palabras elementales que pueden usarse en expresiones
-        this.elementalValues = [
+        // Cache de palabras elementales para búsquedas 
+        this.elementalValues = new Set([
             'PosAv', 'PosCa', 'HayFlorEnLaBolsa', 'HayPapelEnLaBolsa',
             'HayFlorEnLaEsquina', 'HayPapelEnLaEsquina', 'Random'
-        ];
+        ]);
+
+        // Cache de operadores
+        this.comparators = new Set(['==', '!=', '<', '>', '<=', '>=']);
+        this.additiveOps = new Set(['+', '-']);
+        this.multiplicativeOps = new Set(['*', '/']);
+        this.logicalOps = new Set(['&', '|']);
+
+        // Cache de keywords de secciones
+        this.sectionKeywords = new Set([
+            keywords.get('KEYWORD7'), keywords.get('KEYWORD8'), 
+            keywords.get('KEYWORD9'), keywords.get('KEYWORD3'), 
+            keywords.get('KEYWORD4')
+        ]);
     }
 
     parse() {
@@ -63,19 +76,11 @@ class Parser {
     parseProceso() {
         this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD1'));
         const name = this.consume(TOKEN_TYPES.IDENTIFIER).value;
-        this.procesosNames.push(name);
-        const varDeclarations = [];
-
-        const parameters = [];
-        while (this.match(TOKEN_TYPES.PARAMETER)) {
-            const paramToken = this.consume(TOKEN_TYPES.PARAMETER);
-            parameters.push(this.parseParameter(paramToken.value));
-        }
+        this.procesosNames.add(name); // Usar add() en lugar de push()
         
-        if (this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3'))) {
-            varDeclarations.push(this.parseVariablesSection());
-        }
-
+        const parameters = this.parseParameters();
+        const varDeclarations = this.parseOptionalVariables();
+        
         this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD4'));
         const body = this.parseBlock();
         this.consume(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD5'));
@@ -89,13 +94,19 @@ class Parser {
         };
     }
 
-    parseParameter(paramString) {
-        const parts = paramString.split(' ');
-        return {
-            direction: parts[0],
-            name: parts[1].split(':')[0],
-            type: parts[1].split(':')[1] || 'numero'
-        };
+    parseParameters() {
+        const parameters = [];
+        while (this.match(TOKEN_TYPES.PARAMETER)) {
+            const paramToken = this.consume(TOKEN_TYPES.PARAMETER);
+            parameters.push(this.parseParameter(paramToken.value));
+        }
+        return parameters;
+    }
+
+    parseOptionalVariables() {
+        return this.match(TOKEN_TYPES.KEYWORD, keywords.get('KEYWORD3')) 
+            ? [this.parseVariablesSection()] 
+            : [];
     }
 
     parseAreas() {
@@ -239,23 +250,30 @@ class Parser {
     }
 
     parseStatement() {
-        if (this.match(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE1'))) {
-            return this.parseIfStatement();
-        } else if (this.match(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE3'))) {
-            return this.parseWhileStatement();
-        } else if (this.match(TOKEN_TYPES.CONTROL_SENTENCE, keywords.get('CONTROL_SENTENCE4'))) {
-            return this.parseRepeatStatement();
-        } else if (this.match(TOKEN_TYPES.ELEMENTAL_INSTRUCTION)) {
-            return this.parseElementalInstruction();
-        } else if (this.match(TOKEN_TYPES.IDENTIFIER)) {
-            if (this.procesosNames.includes(this.currentToken.value)) {
-                return this.parseProcessCall();
-            } else {
-                return this.parseAssignmentOrDeclaration();
+        const token = this.currentToken;
+        
+        if (token.type === TOKEN_TYPES.CONTROL_SENTENCE) {
+            switch (token.value) {
+                case keywords.get('CONTROL_SENTENCE1'):
+                    return this.parseIfStatement();
+                case keywords.get('CONTROL_SENTENCE3'):
+                    return this.parseWhileStatement();
+                case keywords.get('CONTROL_SENTENCE4'):
+                    return this.parseRepeatStatement();
             }
-        } else {
-            throw new Error(`Declaración no esperada: ${this.currentToken.type} "${this.currentToken.value}" en línea ${this.currentToken.line}`);
         }
+        
+        if (token.type === TOKEN_TYPES.ELEMENTAL_INSTRUCTION) {
+            return this.parseElementalInstruction();
+        }
+        
+        if (token.type === TOKEN_TYPES.IDENTIFIER) {
+            return this.procesosNames.has(token.value) 
+                ? this.parseProcessCall() 
+                : this.parseAssignmentOrDeclaration();
+        }
+        
+        throw new Error(`Declaración no esperada: ${token.type} "${token.value}" en línea ${token.line}`);
     }
 
     parseAssignmentOrDeclaration() {
@@ -299,19 +317,14 @@ class Parser {
     }
 
     parseLogicalExpression() {
-        let left = this.parseComparativeExpression();
-        
-        while (this.match(TOKEN_TYPES.OPERATOR, '&') || 
-               this.match(TOKEN_TYPES.OPERATOR, '|')) {
+    let left = this.parseComparativeExpression();
+    
+        while (this.match(TOKEN_TYPES.OPERATOR) && 
+            this.logicalOps.has(this.currentToken.value)) {
             const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
             const right = this.parseComparativeExpression();
             
-            left = {
-                type: 'BinaryExpression',
-                operator: operator,
-                left: left,
-                right: right
-            };
+            left = this.createBinaryExpression(operator, left, right);
         }
         
         return left;
@@ -320,21 +333,24 @@ class Parser {
     parseComparativeExpression() {
         let left = this.parseAdditiveExpression();
         
-        const comparators = ['==', '!=', '<', '>', '<=', '>='];
         while (this.match(TOKEN_TYPES.OPERATOR) && 
-               comparators.includes(this.currentToken.value)) {
+            this.comparators.has(this.currentToken.value)) {
             const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
             const right = this.parseAdditiveExpression();
             
-            left = {
-                type: 'BinaryExpression',
-                operator: operator,
-                left: left,
-                right: right
-            };
+            left = this.createBinaryExpression(operator, left, right);
         }
         
         return left;
+    }
+
+    createBinaryExpression(operator, left, right) {
+        return {
+            type: 'BinaryExpression',
+            operator: operator,
+            left: left,
+            right: right
+        };
     }
 
     parseAdditiveExpression() {
@@ -376,62 +392,81 @@ class Parser {
     }
 
     parsePrimaryExpression() {
-        if (this.match(TOKEN_TYPES.NUM)) {
-            const token = this.consume(TOKEN_TYPES.NUM);
+        const token = this.currentToken;
+        
+        switch (token.type) {
+            case TOKEN_TYPES.NUM:
+                return this.parseNumericLiteral();
+                
+            case TOKEN_TYPES.IDENTIFIER:
+                return this.parseIdentifierExpression();
+                
+            case TOKEN_TYPES.KEYWORD:
+                return this.parseKeywordExpression();
+                
+            case TOKEN_TYPES.OPERATOR:
+                return this.parseOperatorExpression();
+        }
+        
+        throw new Error(`Expresión primaria no válida: ${token.type} "${token.value}"`);
+    }
+
+    parseNumericLiteral() {
+        const token = this.consume(TOKEN_TYPES.NUM);
+        return {
+            type: 'Literal',
+            value: parseInt(token.value),
+            raw: token.value
+        };
+    }
+
+    parseIdentifierExpression() {
+        const token = this.consume(TOKEN_TYPES.IDENTIFIER);
+        
+        if (this.isElementalValue(token.value)) {
             return {
-                type: 'Literal',
-                value: parseInt(token.value),
-                raw: token.value
-            };
-        } else if (this.match(TOKEN_TYPES.IDENTIFIER)) {
-            const token = this.consume(TOKEN_TYPES.IDENTIFIER);
-            
-            // Verificar si es una palabra elemental que representa un valor
-            if (this.elementalValues.includes(token.value)) {
-                return {
-                    type: 'ElementalValue',
-                    name: token.value
-                };
-            }
-            
-            // Es una variable normal
-            return {
-                type: 'Identifier',
+                type: 'ElementalValue',
                 name: token.value
             };
-        } else if (this.match(TOKEN_TYPES.KEYWORD)) {
-            // Valores booleanos: V (true), F (false)
-            if (this.currentToken.value === 'V' || this.currentToken.value === 'F') {
-                const token = this.consume(TOKEN_TYPES.KEYWORD);
-                return {
-                    type: 'Literal',
-                    value: token.value === 'V',
-                    raw: token.value
-                };
-            }
-            throw new Error(`Keyword no válida en expresión: ${this.currentToken.value}`);
-        } else if (this.match(TOKEN_TYPES.OPERATOR, '(')) {
+        }
+        
+        return {
+            type: 'Identifier',
+            name: token.value
+        };
+    }
+
+    parseKeywordExpression() {
+        // Valores booleanos: V (true), F (false)
+        if (this.currentToken.value === 'V' || this.currentToken.value === 'F') {
+            const token = this.consume(TOKEN_TYPES.KEYWORD);
+            return {
+                type: 'Literal',
+                value: token.value === 'V',
+                raw: token.value
+            };
+        }
+        throw new Error(`Keyword no válida en expresión: ${this.currentToken.value}`);
+    }
+
+    parseOperatorExpression() {
+        if (this.match(TOKEN_TYPES.OPERATOR, '(')) {
             this.consume(TOKEN_TYPES.OPERATOR, '(');
             const expression = this.parseExpression();
             this.consume(TOKEN_TYPES.OPERATOR, ')');
             return expression;
-        } else if (this.match(TOKEN_TYPES.OPERATOR, '-')) {
-            this.consume(TOKEN_TYPES.OPERATOR, '-');
+        }
+        
+        if (this.match(TOKEN_TYPES.OPERATOR, '-') || this.match(TOKEN_TYPES.OPERATOR, '!')) {
+            const operator = this.consume(TOKEN_TYPES.OPERATOR).value;
             return {
                 type: 'UnaryExpression',
-                operator: '-',
-                argument: this.parsePrimaryExpression()
-            };
-        } else if (this.match(TOKEN_TYPES.OPERATOR, '!')) {
-            this.consume(TOKEN_TYPES.OPERATOR, '!');
-            return {
-                type: 'UnaryExpression',
-                operator: '!',
+                operator: operator,
                 argument: this.parsePrimaryExpression()
             };
         }
         
-        throw new Error(`Expresión primaria no válida: ${this.currentToken.type} "${this.currentToken.value}"`);
+        throw new Error(`Operador no válido en expresión: ${this.currentToken.value}`);
     }
 
     parseIfStatement() {
@@ -478,19 +513,18 @@ class Parser {
     }
 
     parseCondition() {
-        let condition = '';
+        const conditionTokens = [];
         
         while (!this.isAtEnd() && 
-               !this.match(TOKEN_TYPES.INDENT) && 
-               !this.match(TOKEN_TYPES.CONTROL_SENTENCE) && 
-               //!this.match(TOKEN_TYPES.ELEMENTAL_INSTRUCTION) && 
-               !this.match(TOKEN_TYPES.IDENTIFIER) ) {
+            !this.match(TOKEN_TYPES.INDENT) && 
+            !this.match(TOKEN_TYPES.CONTROL_SENTENCE) && 
+            !this.match(TOKEN_TYPES.IDENTIFIER)) {
             
-            condition += this.currentToken.value + ' ';
+            conditionTokens.push(this.currentToken.value);
             this.advance();
         }
         
-        condition = condition.trim();
+        const condition = conditionTokens.join(' ').trim();
         
         if (!condition) {
             throw new Error(`Condición esperada después de Si o Sino`);
@@ -544,16 +578,19 @@ class Parser {
     // Métodos auxiliares
     expect(type, value = null) {
         if (this.isAtEnd()) {
-            throw new Error(`Se esperaba ${type} pero se alcanzó el final`);
+            throw new Error(`Se esperaba ${type} pero se alcanzó el final en línea ${this.currentToken.line}`);
         }
         
-        if (this.currentToken.type !== type) {
-            throw new Error(`Se esperaba ${type}, se obtuvo ${this.currentToken.type} en línea ${this.currentToken.line}`);
+        const token = this.currentToken;
+        if (token.type !== type) {
+            throw new Error(`Se esperaba ${type}, se obtuvo ${token.type} ("${token.value}") en línea ${token.line}`);
         }
         
-        if (value !== null && this.currentToken.value !== value) {
-            throw new Error(`Se esperaba "${value}", se obtuvo "${this.currentToken.value}" en línea ${this.currentToken.line}`);
+        if (value !== null && token.value !== value) {
+            throw new Error(`Se esperaba "${value}", se obtuvo "${token.value}" en línea ${token.line}`);
         }
+        
+        return token;
     }
 
     consume(expectedType = null, expectedValue = null) {
@@ -578,11 +615,37 @@ class Parser {
         return nextTokens.includes(this.currentToken.value);
     }
 
+    isSectionStart() {
+        return this.match(TOKEN_TYPES.KEYWORD) && this.sectionKeywords.has(this.currentToken.value);
+    }
+
+    isControlStatement() {
+        if (!this.match(TOKEN_TYPES.CONTROL_SENTENCE)) return false;
+        const controlKeywords = new Set([
+            keywords.get('CONTROL_SENTENCE1'),
+            keywords.get('CONTROL_SENTENCE3'), 
+            keywords.get('CONTROL_SENTENCE4')
+        ]);
+        return controlKeywords.has(this.currentToken.value);
+    }
+
+    isElementalValue(tokenValue) {
+        return this.elementalValues.has(tokenValue);
+    }
+
     advance() {
-        this.position++;
-        if (!this.isAtEnd()) {
+        if (this.position < this.tokens.length - 1) {
+            this.position++;
             this.currentToken = this.tokens[this.position];
+        } else {
+            this.position = this.tokens.length;
+            this.currentToken = { type: TOKEN_TYPES.EOF, value: '' };
         }
+    }
+
+    peek(offset = 1) {
+        const index = this.position + offset;
+        return index < this.tokens.length ? this.tokens[index] : null;
     }
 
     isAtEnd() {
