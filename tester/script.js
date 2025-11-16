@@ -99,7 +99,7 @@ function actualizarNombreArchivo(nombre) {
 }
 
 /*
-     Funciones para renderizar resultados
+     Funciones para renderizar resultados - MEJORADAS
 */
 
 function vincularRobotsConAreas(result) {
@@ -110,121 +110,106 @@ function vincularRobotsConAreas(result) {
     const { areas, robots, main, variables } = result.executable;
     const relaciones = [];
 
-    // 1. Mapear las variables de robots a sus tipos de robot
+    // 1. Usar la información ya procesada por el analizador semántico
     const mapaVariablesRobots = new Map();
     
-    // Procesar las variables para encontrar instancias de robots
+    // Procesar las variables usando la información ya disponible del análisis semántico
     if (variables && typeof variables === 'object') {
         Object.entries(variables).forEach(([nombreVariable, infoVariable]) => {
-            if (infoVariable && infoVariable.type) {
-                // La clave aquí es que el TYPE de la variable indica el tipo de robot
-                // No el value, ya que value suele ser null en la declaración
-                const tipoRobot = infoVariable.type;
+            if (infoVariable && infoVariable.type === 'robot' && infoVariable.robotName) {
+                // El analizador semántico ya procesó la relación variable -> robot
+                const robotName = infoVariable.robotName;
+                const robotDeclarado = robots.find(r => r.name === robotName);
                 
-                // Verificar si este tipo corresponde a un robot declarado
-                const robotDeclarado = robots.find(r => r.name === tipoRobot);
-                
-                if (robotDeclarado) {
-                    mapaVariablesRobots.set(nombreVariable, {
-                        tipoRobot: tipoRobot,
-                        robotDeclarado: robotDeclarado,
-                        variableInfo: infoVariable
-                    });
-                } else {
-                    // Es una variable de tipo robot pero no se encontró el robot declarado
-                    mapaVariablesRobots.set(nombreVariable, {
-                        tipoRobot: tipoRobot,
-                        robotDeclarado: null,
-                        variableInfo: infoVariable,
-                        error: `Tipo de robot "${tipoRobot}" no encontrado en la declaración de robots`
-                    });
-                }
+                mapaVariablesRobots.set(nombreVariable, {
+                    tipoRobot: robotName,
+                    robotDeclarado: robotDeclarado,
+                    variableInfo: infoVariable,
+                    areaAsignada: infoVariable.assignedArea || null,
+                    posicionInicial: infoVariable.initialPosition || null
+                });
             }
         });
     }
 
-    // 2. Buscar instrucciones AsignarArea en el main
+    // 2. También podemos usar la información de robotAssignments si está disponible
+    if (result.robotAssignments && typeof result.robotAssignments === 'object') {
+        Object.entries(result.robotAssignments).forEach(([variableName, assignment]) => {
+            if (!mapaVariablesRobots.has(variableName) && assignment.robotName) {
+                const robotDeclarado = robots.find(r => r.name === assignment.robotName);
+                mapaVariablesRobots.set(variableName, {
+                    tipoRobot: assignment.robotName,
+                    robotDeclarado: robotDeclarado,
+                    variableInfo: variables ? variables[variableName] : null,
+                    areaAsignada: assignment.area || null,
+                    posicionInicial: assignment.position || null,
+                    initialized: assignment.initialized || false
+                });
+            }
+        });
+    }
+
+    // 3. Buscar instrucciones AsignarArea en el main para validar
     const instruccionesAsignarArea = main.filter(instruccion => 
         instruccion.instruction === 'AsignarArea' && 
         instruccion.parameters && 
         instruccion.parameters.length >= 2
     );
 
-    // 3. Para cada instrucción AsignarArea encontrada
+    // 4. Para cada variable de robot encontrada, crear la relación
+    mapaVariablesRobots.forEach((info, variableName) => {
+        const { tipoRobot, robotDeclarado, areaAsignada, posicionInicial, variableInfo } = info;
+        
+        // Buscar si hay una instrucción explícita de AsignarArea para esta variable
+        const instruccionAsignar = instruccionesAsignarArea.find(inst => 
+            inst.parameters && inst.parameters[0] === variableName
+        );
+
+        const areaDesdeInstruccion = instruccionAsignar ? 
+            (instruccionAsignar.parameters[1] || null) : null;
+
+        // Determinar el área final (priorizar la del análisis semántico)
+        const areaFinal = areaAsignada || areaDesdeInstruccion;
+        const areaInfo = areaFinal ? areas.find(a => a.name === areaFinal) : null;
+
+        // Determinar el estado
+        let estado = 'sin_asignar';
+        let error = null;
+
+        if (areaFinal && areaInfo && robotDeclarado) {
+            estado = 'asignado';
+        } else if (areaFinal && !areaInfo) {
+            estado = 'error';
+            error = `Área "${areaFinal}" no encontrada`;
+        } else if (!robotDeclarado) {
+            estado = 'error';
+            error = `Robot "${tipoRobot}" no encontrado en declaraciones`;
+        }
+
+        // Crear la relación
+        relaciones.push({
+            variable: variableName,
+            tipoRobot: tipoRobot,
+            robotDeclarado: robotDeclarado ? robotDeclarado.name : null,
+            area: areaFinal,
+            robotInfo: robotDeclarado,
+            areaInfo: areaInfo,
+            posicionInicial: posicionInicial,
+            instruccionLinea: instruccionAsignar ? instruccionAsignar.line || 0 : null,
+            instruccionCompleta: instruccionAsignar ? 
+                `AsignarArea(${variableName}, ${areaDesdeInstruccion})` : null,
+            estado: estado,
+            error: error,
+            tipoConexion: areaFinal ? 'variable_a_robot_a_area' : 'variable_a_robot_sin_area',
+            inicializado: posicionInicial !== null
+        });
+    });
+
+    // 5. Procesar instrucciones AsignarArea que no tengan variables mapeadas
     instruccionesAsignarArea.forEach(instruccion => {
         const [variableRobot, nombreArea] = instruccion.parameters;
-
-        // Resolver el tipo de robot desde la variable
-        const infoVariable = mapaVariablesRobots.get(variableRobot);
         
-        if (infoVariable) {
-            const { tipoRobot, robotDeclarado, error: errorVariable } = infoVariable;
-            
-            // Buscar el área por nombre
-            const area = areas.find(a => a.name === nombreArea);
-
-            if (robotDeclarado && area) {
-                // Conexión exitosa: variable -> robot declarado -> área
-                relaciones.push({
-                    variable: variableRobot,
-                    tipoRobot: tipoRobot,
-                    robotDeclarado: robotDeclarado.name,
-                    area: nombreArea,
-                    robotInfo: robotDeclarado,
-                    areaInfo: area,
-                    instruccionLinea: instruccion.line || 0,
-                    instruccionCompleta: `AsignarArea(${variableRobot}, ${nombreArea})`,
-                    estado: 'asignado',
-                    tipoConexion: 'variable_a_robot_declarado'
-                });
-            } else if (robotDeclarado && !area) {
-                // Robot encontrado pero área no existe
-                relaciones.push({
-                    variable: variableRobot,
-                    tipoRobot: tipoRobot,
-                    robotDeclarado: robotDeclarado.name,
-                    area: nombreArea,
-                    robotInfo: robotDeclarado,
-                    areaInfo: null,
-                    instruccionLinea: instruccion.line || 0,
-                    instruccionCompleta: `AsignarArea(${variableRobot}, ${nombreArea})`,
-                    error: errorVariable || `Área "${nombreArea}" no encontrada`,
-                    estado: 'error',
-                    tipoConexion: 'variable_a_robot_declarado'
-                });
-            } else if (!robotDeclarado && area) {
-                // Área encontrada pero el tipo de robot de la variable no existe
-                relaciones.push({
-                    variable: variableRobot,
-                    tipoRobot: tipoRobot,
-                    robotDeclarado: null,
-                    area: nombreArea,
-                    robotInfo: null,
-                    areaInfo: area,
-                    instruccionLinea: instruccion.line || 0,
-                    instruccionCompleta: `AsignarArea(${variableRobot}, ${nombreArea})`,
-                    error: errorVariable || `Robot declarado "${tipoRobot}" no encontrado`,
-                    estado: 'error',
-                    tipoConexion: 'variable_a_robot_inexistente'
-                });
-            } else {
-                // Ni robot ni área encontrados
-                relaciones.push({
-                    variable: variableRobot,
-                    tipoRobot: tipoRobot,
-                    robotDeclarado: null,
-                    area: nombreArea,
-                    robotInfo: null,
-                    areaInfo: null,
-                    instruccionLinea: instruccion.line || 0,
-                    instruccionCompleta: `AsignarArea(${variableRobot}, ${nombreArea})`,
-                    error: errorVariable || `Robot "${tipoRobot}" y área "${nombreArea}" no encontrados`,
-                    estado: 'error',
-                    tipoConexion: 'variable_a_robot_inexistente'
-                });
-            }
-        } else {
-            // Variable no encontrada en el mapa (no declarada o no es de tipo robot)
+        if (!mapaVariablesRobots.has(variableRobot)) {
             const area = areas.find(a => a.name === nombreArea);
             
             relaciones.push({
@@ -243,30 +228,7 @@ function vincularRobotsConAreas(result) {
         }
     });
 
-    // 4. Identificar variables de robots que no tienen área asignada
-    const variablesConAsignacion = new Set(relaciones.map(rel => rel.variable));
-    
-    mapaVariablesRobots.forEach((info, variable) => {
-        if (!variablesConAsignacion.has(variable)) {
-            const { tipoRobot, robotDeclarado, error: errorVariable } = info;
-            
-            relaciones.push({
-                variable: variable,
-                tipoRobot: tipoRobot,
-                robotDeclarado: robotDeclarado ? robotDeclarado.name : null,
-                area: null,
-                robotInfo: robotDeclarado,
-                areaInfo: null,
-                instruccionLinea: null,
-                instruccionCompleta: null,
-                error: errorVariable || 'No tiene área asignada',
-                estado: 'sin_asignar',
-                tipoConexion: 'variable_sin_asignar'
-            });
-        }
-    });
-
-    // 5. Identificar robots declarados que no tienen variables asociadas
+    // 6. Identificar robots declarados que no tienen variables asociadas
     const robotsConVariables = new Set(
         Array.from(mapaVariablesRobots.values())
             .filter(info => info.robotDeclarado)
@@ -274,24 +236,25 @@ function vincularRobotsConAreas(result) {
     );
     
     robots.forEach(robot => {
-        if (!robotsConVariables.has(robot.name)) {
+        if (!robotsConVariables.has(robot.name) && robot.isSubtype) {
             relaciones.push({
                 variable: null,
                 tipoRobot: robot.name,
                 robotDeclarado: robot.name,
-                area: null,
+                area: robot.area || null,
                 robotInfo: robot,
-                areaInfo: null,
+                areaInfo: robot.area ? areas.find(a => a.name === robot.area) : null,
                 instruccionLinea: null,
                 instruccionCompleta: null,
-                error: 'No tiene variables asociadas',
-                estado: 'sin_variables',
-                tipoConexion: 'robot_sin_variables'
+                error: robot.area ? 'No tiene variables asociadas' : 'No tiene variables ni área asignada',
+                estado: robot.area ? 'sin_variables' : 'sin_variables_ni_area',
+                tipoConexion: 'robot_sin_variables',
+                inicializado: robot.active || false
             });
         }
     });
 
-    // 6. Identificar áreas que no tienen robots asignados
+    // 7. Identificar áreas que no tienen robots asignados
     const areasConRobots = new Set(relaciones
         .filter(rel => rel.area && rel.estado === 'asignado')
         .map(rel => rel.area)
@@ -341,17 +304,23 @@ function renderRobotAreaRelations(result) {
     const relacionesRelevantes = relaciones.filter(rel => 
         rel.area !== null || 
         rel.estado === 'sin_asignar' || 
-        rel.estado === 'sin_variables'
+        rel.estado === 'sin_variables' ||
+        rel.estado === 'asignado'
     );
 
     if (relacionesRelevantes.length > 0) {
+        const asignadasCount = relaciones.filter(r => r.estado === 'asignado').length;
+        const errorCount = relaciones.filter(r => r.estado === 'error').length;
+        const sinAsignarCount = relaciones.filter(r => r.estado === 'sin_asignar').length;
+        const sinVariablesCount = relaciones.filter(r => r.estado === 'sin_variables').length;
+
         areasList.innerHTML = `
             <div class="section-header">
                 <h3>Conexiones Robot-Área (${relacionesRelevantes.length})</h3>
                 <div class="relations-stats">
-                    ${relaciones.filter(r => r.estado === 'asignado').length} asignadas,
-                    ${relaciones.filter(r => r.estado === 'error').length} con errores,
-                    ${relaciones.filter(r => r.estado === 'sin_asignar').length} sin asignar
+                    ${asignadasCount} asignadas,
+                    ${errorCount} con errores,
+                    ${sinAsignarCount + sinVariablesCount} sin completar
                 </div>
             </div>
             <div class="relations-content">
@@ -381,8 +350,9 @@ function renderRobotAreaRelations(result) {
                                                              'status-warning'}">
                                     ${relacion.estado === 'asignado' ? 'Conectado' : 
                                       relacion.estado === 'error' ? 'Error' : 
-                                      relacion.estado === 'sin_asignar' ? 'Sin asignar' : 
-                                      relacion.estado === 'sin_variables' ? 'Sin variables' : 'Sin robots'}
+                                      relacion.estado === 'sin_asignar' ? 'Sin área' : 
+                                      relacion.estado === 'sin_variables' ? 'Sin variables' : 
+                                      relacion.estado === 'sin_robots' ? 'Sin robots' : 'Estado desconocido'}
                                 </div>
                             </div>
                             
@@ -403,8 +373,16 @@ function renderRobotAreaRelations(result) {
                                             </div>
                                             ${relacion.tipoRobot ? `
                                             <div class="detail-item">
-                                                <label>Tipo:</label>
+                                                <label>Tipo Robot:</label>
                                                 <span>${relacion.tipoRobot}</span>
+                                            </div>
+                                            ` : ''}
+                                            ${relacion.inicializado !== undefined ? `
+                                            <div class="detail-item">
+                                                <label>Inicializado:</label>
+                                                <span class="${relacion.inicializado ? 'status-success' : 'status-warning'}">
+                                                    ${relacion.inicializado ? 'Sí' : 'No'}
+                                                </span>
                                             </div>
                                             ` : ''}
                                         </div>
@@ -421,12 +399,22 @@ function renderRobotAreaRelations(result) {
                                             </div>
                                             <div class="detail-item">
                                                 <label>Instrucciones:</label>
-                                                <span>${relacion.robotInfo.instructions.length}</span>
+                                                <span>${relacion.robotInfo.instructions ? relacion.robotInfo.instructions.length : 0}</span>
                                             </div>
+                                            ${relacion.robotInfo.position ? `
                                             <div class="detail-item">
                                                 <label>Posición:</label>
                                                 <span>(${relacion.robotInfo.position.x}, ${relacion.robotInfo.position.y})</span>
                                             </div>
+                                            ` : ''}
+                                            ${relacion.robotInfo.active !== undefined ? `
+                                            <div class="detail-item">
+                                                <label>Activo:</label>
+                                                <span class="${relacion.robotInfo.active ? 'status-success' : 'status-warning'}">
+                                                    ${relacion.robotInfo.active ? 'Sí' : 'No'}
+                                                </span>
+                                            </div>
+                                            ` : ''}
                                         </div>
                                     </div>
                                 ` : ''}
@@ -445,7 +433,25 @@ function renderRobotAreaRelations(result) {
                                             </div>
                                             <div class="detail-item">
                                                 <label>Dimensiones:</label>
-                                                <span>${relacion.areaInfo.dimensions.join(' x ')}</span>
+                                                <span>${relacion.areaInfo.dimensions ? relacion.areaInfo.dimensions.join(' x ') : 'N/A'}</span>
+                                            </div>
+                                            ${relacion.areaInfo.bounds ? `
+                                            <div class="detail-item">
+                                                <label>Límites:</label>
+                                                <span>(${relacion.areaInfo.bounds.x1},${relacion.areaInfo.bounds.y1}) a (${relacion.areaInfo.bounds.x2},${relacion.areaInfo.bounds.y2})</span>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${relacion.posicionInicial ? `
+                                    <div class="position-details">
+                                        <h4>Posición Inicial</h4>
+                                        <div class="detail-grid">
+                                            <div class="detail-item">
+                                                <label>Coordenadas:</label>
+                                                <span>(${relacion.posicionInicial.x}, ${relacion.posicionInicial.y})</span>
                                             </div>
                                         </div>
                                     </div>
@@ -491,7 +497,7 @@ function updateProcesosList(result){
     // Limpiar contenido anterior
     procesosResults.innerHTML = '';
         
-    if (result.executable.procesos.length > 0) {
+    if (result.executable.procesos && result.executable.procesos.length > 0) {
         procesosResults.innerHTML = `
             <div class="section-header">
                 <h3>Procesos Declarados (${result.executable.procesos.length})</h3>
@@ -504,7 +510,7 @@ function updateProcesosList(result){
                                 <div class="process-name">
                                     <i class="process-icon">⚙️</i> 
                                     <span class="process-title">${proceso.name}</span>
-                                    <span class="process-badge">${proceso.instructions.length} instr.</span>
+                                    <span class="process-badge">${proceso.instructions ? proceso.instructions.length : 0} instr.</span>
                                 </div>
                             </div>
                             <div class="process-details">
@@ -525,38 +531,30 @@ function updateProcesosList(result){
                                         </div>
                                         <div class="detail-item">
                                             <label>Total Instrucciones:</label>
-                                            <span>${proceso.instructions.length}</span>
+                                            <span>${proceso.instructions ? proceso.instructions.length : 0}</span>
                                         </div>
-                                        ${proceso.instructionCount ? `
-                                        <div class="detail-item">
-                                            <label>Instrucciones Ejecutables:</label>
-                                            <span>${proceso.instructionCount}</span>
-                                        </div>
-                                        ` : ''}
                                     </div>
                                 </div>
                                 
-                                ${proceso.variables ? `
+                                ${proceso.variables && proceso.variables.length > 0 ? `
                                 <div class="detail-section">
                                     <h4>Variables del Proceso</h4>
-                                    ${proceso.variables.map(seccion =>
-                                        seccion.declarations.map(variable =>
-                                    `
+                                    ${proceso.variables.map(variable => `
                                         <div class="detail-item">
-                                            <span>${variable.name + " : " + variable.variableType}</span>
+                                            <span>${variable.name} : ${variable.type || variable.variableType}</span>
                                         </div>
-                                    `).join('')
-                                    )}
+                                    `).join('')}
                                 </div>
                                 ` : ''}
                                 
+                                ${proceso.instructions && proceso.instructions.length > 0 ? `
                                 <div class="detail-section">
                                     <h4>Instrucciones del Proceso</h4>
                                     <div class="instructions-list">
                                         ${proceso.instructions.map((instruccion, instIndex) => `
                                             <div class="instruction-item">
                                                 <span class="instruction-number">${instIndex + 1}.</span>
-                                                <span class="instruction-type">${instruccion.type}</span>
+                                                <span class="instruction-type">${instruccion.type || 'instrucción'}</span>
                                                 <span class="instruction-content">
                                                     ${instruccion.instruction || instruccion.processName || 'N/A'}
                                                     ${instruccion.parameters && instruccion.parameters.length > 0 ? 
@@ -570,6 +568,7 @@ function updateProcesosList(result){
                                         `).join('')}
                                     </div>
                                 </div>
+                                ` : ''}
                             </div>
                         </div>
                     `).join('')}
@@ -586,51 +585,6 @@ function updateProcesosList(result){
     }
 }
 
-// En renderCompilerResults, asegúrate de limpiar antes de mostrar resultados:
-function renderCompilerResults() {
-    const errorList = document.getElementById('errorList');
-
-    if(!machine.hasErrors()){
-        alert('Compilación exitosa sin errores');
-        let result = machine.getResultThree();
-        
-        // Actualiza el resumen
-        document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
-        document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
-        document.getElementById('totalAreas').textContent = result.summary.totalAreas;
-        document.getElementById('totalRobots').textContent = result.summary.totalRobots;
-        document.getElementById('totalErrors').textContent = 0;
-
-        // Limpiar y actualizar cada sección
-        errorList.innerHTML = '<div class="empty-state">No se encontraron errores</div>';
-
-        // Actualizar el apartado de información del programa
-        updateProcesosList(result); // Procesos
-        updateRobotsList(result);   // Robots
-        renderRobotAreaRelations(result); // Areas
-
-    } else {
-        alert('La compilación terminó con errores');
-        
-        const erroresReport = machine.reportErrors();
-
-        document.getElementById('totalErrors').textContent = erroresReport.length;
-
-        // Limpiar y renderizar errores
-        errorList.innerHTML = erroresReport.map(error => `
-            <div class="error-item">
-                <div class="error-message">${error}</div>
-            </div>
-        `).join('');
-        
-        // Limpiar las otras secciones cuando hay errores
-        document.getElementById('processList').innerHTML = '<div class="empty-state">No se puede mostrar procesos debido a errores de compilación</div>';
-        document.getElementById('robotsList').innerHTML = '<div class="empty-state">No se puede mostrar robots debido a errores de compilación</div>';
-        document.getElementById('areaList').innerHTML = '<div class="empty-state">No se puede mostrar áreas debido a errores de compilación</div>';
-    }
-}
-
-// En la función updateRobotsList, cambia la estructura:
 function updateRobotsList(result) {
     const robotsResults = document.getElementById('robotsList');
     
@@ -650,7 +604,10 @@ function updateRobotsList(result) {
                                 <div class="robot-name">
                                     <i class="robot-icon">🤖</i> 
                                     <span class="robot-title">${robot.name}</span>
-                                    <span class="robot-badge">${robot.instructions.length} instr.</span>
+                                    <span class="robot-badge">${robot.instructions ? robot.instructions.length : 0} instr.</span>
+                                </div>
+                                <div class="robot-status ${robot.active ? 'status-success' : 'status-warning'}">
+                                    ${robot.active ? 'Activo' : 'Inactivo'}
                                 </div>
                             </div>
                             <div class="robot-details">
@@ -663,25 +620,34 @@ function updateRobotsList(result) {
                                         </div>
                                         <div class="detail-item">
                                             <label>Total Instrucciones:</label>
-                                            <span>${robot.instructions.length}</span>
+                                            <span>${robot.instructions ? robot.instructions.length : 0}</span>
                                         </div>
+                                        <div class="detail-item">
+                                            <label>Subtipo:</label>
+                                            <span>${robot.isSubtype ? 'Sí' : 'No'}</span>
+                                        </div>
+                                        ${robot.position ? `
+                                        <div class="detail-item">
+                                            <label>Posición:</label>
+                                            <span>(${robot.position.x}, ${robot.position.y})</span>
+                                        </div>
+                                        ` : ''}
+                                        ${robot.area ? `
+                                        <div class="detail-item">
+                                            <label>Área:</label>
+                                            <span>${robot.area}</span>
+                                        </div>
+                                        ` : ''}
+                                        ${robot.variableName ? `
+                                        <div class="detail-item">
+                                            <label>Variable Asociada:</label>
+                                            <span>${robot.variableName}</span>
+                                        </div>
+                                        ` : ''}
                                     </div>
                                 </div>
-                            
-                                ${robot.variables && robot.variables.length > 0 ? `
-                                <div class="detail-section">
-                                    <h4>Variables del Robot</h4>
-                                    ${robot.variables.map(variable => `
-                                        <div class="detail-item">
-                                            <span class="variable-name">${variable.name}</span>
-                                            <span class="variable-type">: ${variable.type}</span>
-                                            ${variable.value !== undefined ? 
-                                                `<span class="variable-value"> = ${variable.value}</span>` : ''}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                                ` : ''}
                                 
+                                ${robot.instructions && robot.instructions.length > 0 ? `
                                 <div class="detail-section">
                                     <h4>Instrucciones del Robot</h4>
                                     <div class="instructions-list">
@@ -704,25 +670,6 @@ function updateRobotsList(result) {
                                                     ''}
                                             </div>
                                         `).join('')}
-                                    </div>
-                                </div>
-                                
-                                ${robot.areaInfo ? `
-                                <div class="detail-section">
-                                    <h4>Información del Área Asignada</h4>
-                                    <div class="detail-grid">
-                                        <div class="detail-item">
-                                            <label>Nombre del Área:</label>
-                                            <span>${robot.areaInfo.name}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label>Tipo:</label>
-                                            <span>${robot.areaInfo.type}</span>
-                                        </div>
-                                        <div class="detail-item">
-                                            <label>Dimensiones:</label>
-                                            <span>${robot.areaInfo.dimensions.join(' x ')}</span>
-                                        </div>
                                     </div>
                                 </div>
                                 ` : ''}
@@ -751,22 +698,23 @@ function renderCompilerResults() {
     if(!machine.hasErrors()){
         alert('Compilación exitosa sin errores');
         let result = machine.getResultThree();
-        // Actualiza el resumen
         
-        document.getElementById('totalProcesses').textContent = result.summary.totalProcesses;
-        document.getElementById('totalInstructions').textContent = result.summary.totalInstructions;
-        document.getElementById('totalAreas').textContent = result.summary.totalAreas;
-        document.getElementById('totalRobots').textContent = result.summary.totalRobots;
+        // Actualiza el resumen
+        document.getElementById('totalProcesses').textContent = result.summary ? result.summary.totalProcesses : 0;
+        document.getElementById('totalInstructions').textContent = result.summary ? result.summary.totalInstructions : 0;
+        document.getElementById('totalAreas').textContent = result.summary ? result.summary.totalAreas : 0;
+        document.getElementById('totalRobots').textContent = result.summary ? result.summary.totalRobots : 0;
         document.getElementById('totalErrors').textContent = 0;
 
+        // Limpiar y actualizar cada sección
         errorList.innerHTML = '<div class="empty-state">No se encontraron errores</div>';
 
-        //Actualiza el apartado de informacion del programa
+        // Actualizar el apartado de información del programa
         updateProcesosList(result); // Procesos
         updateRobotsList(result);   // Robots
         renderRobotAreaRelations(result); // Areas
 
-    }else{
+    } else {
         alert('La compilación terminó con errores');
         
         const erroresReport = machine.reportErrors();
@@ -780,6 +728,10 @@ function renderCompilerResults() {
             </div>
         `).join('');
         
+        // Limpiar las otras secciones cuando hay errores
+        document.getElementById('processList').innerHTML = '<div class="empty-state">No se puede mostrar procesos debido a errores de compilación</div>';
+        document.getElementById('robotsList').innerHTML = '<div class="empty-state">No se puede mostrar robots debido a errores de compilación</div>';
+        document.getElementById('areaList').innerHTML = '<div class="empty-state">No se puede mostrar áreas debido a errores de compilación</div>';
     }
 }
 

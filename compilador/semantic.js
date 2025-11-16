@@ -25,11 +25,17 @@ class SemanticAnalyzer {
             connections: new Set(),
             robotCommunications: new Map()
         };
+
+        // Nuevo: Mapa para seguimiento de asociaciones robot-variable-área
+        this.robotAssignments = new Map();
     }
 
     analyze(ast) {
         this.resetState();
         this.visitProgram(ast);
+        
+        // Procesar las instrucciones del main después de que todas las secciones están cargadas
+        this.processMainInstructions();
         
         return {
             symbolTable: this.getFormattedSymbolTable(),
@@ -42,7 +48,9 @@ class SemanticAnalyzer {
             errors: this.errors,
             success: this.errors.length === 0,
             summary: this.getAnalysisSummary(),
-            communicationStats: this.getCommunicationStats()
+            communicationStats: this.getCommunicationStats(),
+            // Nuevo: Incluir las asociaciones procesadas
+            robotAssignments: this.mapToObject(this.robotAssignments)
         };
     }
 
@@ -60,7 +68,13 @@ class SemanticAnalyzer {
             'AreasSection': (section) => this.visitAreasSection(section)
         };
 
-        node.body.forEach(section => {
+        // Primero procesar áreas y robots para tener las definiciones disponibles
+        const orderedSections = node.body.slice().sort((a, b) => {
+            const order = { 'AreasSection': 1, 'RobotsSection': 2, 'VariablesSection': 3, 'ProcesosSection': 4, 'MainBlock': 5 };
+            return (order[a.type] || 99) - (order[b.type] || 99);
+        });
+
+        orderedSections.forEach(section => {
             const handler = sectionHandlers[section.type];
             if (handler) {
                 handler(section);
@@ -74,17 +88,38 @@ class SemanticAnalyzer {
 
     visitVariablesSection(node) {
         node.declarations.forEach(decl => {
-            this.declareVariable(decl.name, decl.variableType || decl.type, 'global');
+            // Determinar el tipo correcto de la variable
+            let variableType = decl.variableType || decl.type;
+            let robotName = null;
+            
+            // Si el tipo parece ser un nombre de robot, marcar como tipo 'robot'
+            if (variableType && variableType !== 'numero' && variableType !== 'booleano') {
+                const isRobotType = this.executableCode.robots.some(robot => 
+                    robot.name === variableType
+                );
+                if (isRobotType) {
+                    this.declareVariable(decl.name, 'robot', 'global');
+                    robotName = variableType;
+                    variableType = 'robot';
+                } else {
+                    this.declareVariable(decl.name, variableType, 'global');
+                }
+            } else {
+                this.declareVariable(decl.name, variableType, 'global');
+            }
             
             const variableInfo = {
                 name: decl.name,
-                type: decl.variableType || decl.type,
-                value: null,
-                initialized: false
+                type: variableType,
+                value: robotName,
+                initialized: false,
+                robotName: robotName,
+                initialPosition: null,
+                assignedArea: null
             };
             
-            if (variableInfo.type === 'robot') {
-                this.processRobotVariable(decl.name, variableInfo);
+            if (variableType === 'robot' && robotName) {
+                this.processRobotVariable(decl.name, variableInfo, robotName);
             }
             
             this.executableCode.variables.set(decl.name, variableInfo);
@@ -95,12 +130,15 @@ class SemanticAnalyzer {
         node.areas.forEach(area => {
             this.declareVariable(area.name, 'area', 'global');
             
-            this.executableCode.areas.push({
+            const areaInfo = {
                 name: area.name,
                 type: area.areaType,
                 dimensions: area.dimensions || [],
-                bounds: this.calculateAreaBounds(area.dimensions)
-            });
+                bounds: this.calculateAreaBounds(area.dimensions),
+                assignedRobots: [] // Nuevo: Seguimiento de robots asignados
+            };
+            
+            this.executableCode.areas.push(areaInfo);
         });
     }
 
@@ -142,17 +180,19 @@ class SemanticAnalyzer {
 
     visitRobotsSection(node) {
         node.robots.forEach(robot => {
-            this.declareVariable(robot.name, 'robot', 'global');
-            
+            // Los robots en la sección robots son subtipos, no variables
             const robotInfo = {
                 name: robot.name,
                 instructions: this.compileInstructions(robot.body),
-                position: { x: 0, y: 0 },
+                position: null, // Los subtipos no tienen posición inicial
                 direction: 'este',
                 bag: { flores: 0, papeles: 0 },
-                active: false,
+                active: false, // Solo se activan cuando se inicializan en el main
                 variableName: null,
-                area: null
+                associatedVariable: null,
+                area: null,
+                isSubtype: true, // Marcar como subtipo
+                initialized: false
             };
             
             this.executableCode.robots.push(robotInfo);
@@ -166,10 +206,150 @@ class SemanticAnalyzer {
     visitMainBlock(node) {
         this.enterScope('main');
         this.executableCode.main = this.compileInstructions(node.body);
-        
-        this.processMainInstructions();
         this.visitBlock(node.body);
         this.exitScope();
+    }
+
+    // ========== MÉTODOS DE PROCESAMIENTO DE ROBOTS MEJORADOS ==========
+
+    processRobotVariable(variableName, variableInfo, robotName) {
+        if (robotName) {
+            variableInfo.value = robotName;
+            variableInfo.initialized = true;
+            variableInfo.robotName = robotName;
+            
+            // Actualizar la información del robot con la variable que lo referencia
+            const robot = this.executableCode.robots.find(r => r.name === robotName);
+            if (robot) {
+                robot.variableName = variableName;
+                robot.associatedVariable = variableName;
+                
+                // Registrar la asociación en el mapa de asignaciones
+                this.robotAssignments.set(variableName, {
+                    variableName: variableName,
+                    robotName: robotName,
+                    robot: robot,
+                    area: null,
+                    position: null,
+                    initialized: false
+                });
+            }
+        } else {
+            this.errors.push(`No se encontró el robot para la variable '${variableName}'`);
+        }
+    }
+
+    processMainInstructions() {
+        // Procesar todas las instrucciones del main en orden
+        this.executableCode.main.forEach((instruction, index) => {
+            if (instruction.instruction === 'AsignarArea' && instruction.parameters?.length >= 2) {
+                this.processAreaAssignment(instruction, index);
+            } else if (instruction.instruction === 'Iniciar' && instruction.parameters?.length >= 3) {
+                this.processRobotInitialization(instruction, index);
+            }
+        });
+
+        // Validar que todos los robots tengan área asignada si es necesario
+        this.validateRobotAssignments();
+    }
+
+    processAreaAssignment(instruction, index) {
+        const [variableRobot, areaName] = instruction.parameters;
+        const variableName = this.extractParameterValue(variableRobot);
+        const area = this.extractParameterValue(areaName);
+        
+        const variableInfo = this.executableCode.variables.get(variableName);
+        
+        if (variableInfo && variableInfo.value) {
+            const robot = this.executableCode.robots.find(r => r.name === variableInfo.value);
+            if (robot) {
+                // Verificar que el área existe
+                const areaExists = this.executableCode.areas.some(a => a.name === area);
+                if (!areaExists) {
+                    this.errors.push(`El área '${area}' no está definida (instrucción ${index + 1} en main)`);
+                    return;
+                }
+
+                robot.area = area;
+                variableInfo.assignedArea = area;
+                
+                // Actualizar el área en el mapa de asignaciones
+                const assignment = this.robotAssignments.get(variableName);
+                if (assignment) {
+                    assignment.area = area;
+                    
+                    // Actualizar también en la información del área
+                    const areaInfo = this.executableCode.areas.find(a => a.name === area);
+                    if (areaInfo && !areaInfo.assignedRobots.includes(robot.name)) {
+                        areaInfo.assignedRobots.push(robot.name);
+                    }
+                }
+            } else {
+                this.errors.push(`No se pudo encontrar el robot para la variable '${variableName}' en asignación de área (instrucción ${index + 1} en main)`);
+            }
+        } else {
+            this.errors.push(`Variable '${variableName}' no encontrada o sin robot asignado para área (instrucción ${index + 1} en main)`);
+        }
+    }
+
+    processRobotInitialization(instruction, index) {
+        const [variableRobot, xParam, yParam] = instruction.parameters;
+        const variableName = this.extractParameterValue(variableRobot);
+        const x = parseInt(this.extractParameterValue(xParam));
+        const y = parseInt(this.extractParameterValue(yParam));
+        
+        const variableInfo = this.executableCode.variables.get(variableName);
+        
+        if (variableInfo && variableInfo.value) {
+            const robot = this.executableCode.robots.find(r => r.name === variableInfo.value);
+            if (robot) {
+                // Validar coordenadas
+                if (isNaN(x) || isNaN(y)) {
+                    this.errors.push(`Coordenadas inválidas para inicialización de robot (instrucción ${index + 1} en main)`);
+                    return;
+                }
+
+                robot.position = { 
+                    x: x, 
+                    y: y 
+                };
+                robot.active = true;
+                robot.initialized = true;
+                variableInfo.initialized = true;
+                variableInfo.initialPosition = { x: x, y: y };
+                
+                // Actualizar la posición en el mapa de asignaciones
+                const assignment = this.robotAssignments.get(variableName);
+                if (assignment) {
+                    assignment.position = { x: x, y: y };
+                    assignment.initialized = true;
+                    
+                    // Validar que la posición esté dentro del área asignada si existe
+                    if (robot.area) {
+                        const areaInfo = this.executableCode.areas.find(a => a.name === robot.area);
+                        if (areaInfo && areaInfo.bounds) {
+                            const bounds = areaInfo.bounds;
+                            if (x < bounds.x1 || x > bounds.x2 || y < bounds.y1 || y > bounds.y2) {
+                                this.errors.push(`Advertencia: Robot '${robot.name}' inicializado en posición (${x}, ${y}) fuera del área '${robot.area}' (${bounds.x1},${bounds.y1})-(${bounds.x2},${bounds.y2})`);
+                            }
+                        }
+                    }
+                }
+            } else {
+                this.errors.push(`No se pudo encontrar el robot para la variable '${variableName}' en inicialización (instrucción ${index + 1} en main)`);
+            }
+        } else {
+            this.errors.push(`Variable '${variableName}' no encontrada o sin robot asignado para inicialización (instrucción ${index + 1} en main)`);
+        }
+    }
+
+    validateRobotAssignments() {
+        // Validar que todos los robots variables tengan área asignada
+        for (let [variableName, assignment] of this.robotAssignments) {
+            if (assignment.initialized && !assignment.area) {
+                this.errors.push(`Advertencia: Robot '${assignment.robotName}' (variable '${variableName}') inicializado sin área asignada`);
+            }
+        }
     }
 
     // ========== MÉTODOS DE VISITACIÓN DE STATEMENTS ==========
@@ -514,101 +694,20 @@ class SemanticAnalyzer {
 
     // ========== MÉTODOS AUXILIARES ==========
 
-    processRobotVariable(variableName, variableInfo) {
-        const robotName = this.findRobotNameForVariable(variableName);
-        if (robotName) {
-            variableInfo.value = robotName;
-            variableInfo.initialized = true;
-            
-            const robot = this.executableCode.robots.find(r => r.name === robotName);
-            if (robot) {
-                robot.variableName = variableName;
-            }
-        }
-    }
-
-    findRobotNameForVariable(variableName) {
-        const robots = this.executableCode.robots;
-        
-        // Coincidencia directa
-        const directMatch = robots.find(robot => robot.name === variableName);
-        if (directMatch) return directMatch.name;
-        
-        // Estrategias de búsqueda
-        const possibleNames = [
-            variableName,
-            variableName.replace('R_', 'robot'),
-            variableName.toLowerCase(),
-            `robot${variableName}`
-        ];
-        
-        for (const name of possibleNames) {
-            const match = robots.find(robot => 
-                robot.name.toLowerCase() === name.toLowerCase()
-            );
-            if (match) return match.name;
-        }
-        
-        // Único robot disponible
-        return robots.length === 1 ? robots[0].name : null;
-    }
-
-    processMainInstructions() {
-        this.executableCode.main.forEach(instruction => {
-            if (instruction.instruction === 'AsignarArea' && instruction.parameters?.length >= 2) {
-                this.processAreaAssignment(instruction);
-            } else if (instruction.instruction === 'Iniciar' && instruction.parameters?.length >= 3) {
-                this.processRobotInitialization(instruction);
-            }
-        });
-    }
-
-    processAreaAssignment(instruction) {
-        const [variableRobot, areaName] = instruction.parameters;
-        const variableInfo = this.executableCode.variables.get(variableRobot);
-        
-        if (variableInfo && variableInfo.value) {
-            const robot = this.executableCode.robots.find(r => r.name === variableInfo.value);
-            if (robot) {
-                robot.area = areaName;
-                variableInfo.assignedArea = areaName;
-            }
-        }
-    }
-
-    processRobotInitialization(instruction) {
-        const [variableRobot, x, y] = instruction.parameters;
-        const variableInfo = this.executableCode.variables.get(variableRobot);
-        
-        if (variableInfo && variableInfo.value) {
-            const robot = this.executableCode.robots.find(r => r.name === variableInfo.value);
-            if (robot) {
-                robot.position = { 
-                    x: parseInt(x) || 0, 
-                    y: parseInt(y) || 0 
-                };
-                robot.active = true;
-                variableInfo.initialPosition = { x: parseInt(x) || 0, y: parseInt(y) || 0 };
-            }
-        }
-    }
-
-    validateProcessCallParameters(node, process) {
-        const expectedParams = process.parameters?.length || 0;
-        const actualParams = node.parameters?.length || 0;
-        
-        if (actualParams !== expectedParams) {
-            this.errors.push(`Número incorrecto de parámetros para '${node.name}'. Esperados: ${expectedParams}, obtenidos: ${actualParams}`);
-            this.processCalls[this.processCalls.length - 1].isValid = false;
-        }
-
-        node.parameters?.forEach((param, index) => {
-            this.visitParameter(param, node.name, index);
-        });
-    }
-
     extractParameterValue(param) {
-        if (typeof param === 'string') return param;
+        if (typeof param === 'string') {
+            // Si es string, verificar si es número o variable
+            if (!isNaN(param)) {
+                return param; // Es número
+            } else {
+                // Es variable, buscar su valor
+                const variable = this.lookupVariable(param);
+                if (variable && variable.value !== undefined) {
+                    return variable.value.toString();
+                }
+                return param; // Devolver el nombre como fallback
+            }
+        }
         if (param?.value !== undefined) return param.value.toString();
         if (param?.name) return param.name;
         return null;
@@ -726,7 +825,39 @@ class SemanticAnalyzer {
 
     getAnalysisSummary() {
         const robotVariables = Array.from(this.executableCode.variables.values())
-            .filter(v => v.type === 'robot').length;
+            .filter(v => v.type === 'robot' || v.robotName).length;
+
+        // Obtener información de posiciones de robots
+        const robotPositions = {};
+        const robotInitializations = [];
+        
+        this.executableCode.robots.forEach(robot => {
+            if (robot.active && robot.position) {
+                robotPositions[robot.name] = {
+                    position: robot.position,
+                    variable: robot.variableName,
+                    area: robot.area,
+                    active: robot.active
+                };
+                
+                robotInitializations.push({
+                    robotName: robot.name,
+                    variableName: robot.variableName,
+                    position: robot.position,
+                    area: robot.area
+                });
+            }
+        });
+
+        // Información de áreas con robots asignados
+        const areaAssignments = {};
+        this.executableCode.areas.forEach(area => {
+            areaAssignments[area.name] = {
+                area: area,
+                assignedRobots: area.assignedRobots || [],
+                totalRobots: (area.assignedRobots || []).length
+            };
+        });
 
         return {
             totalInstructions: this.getTotalInstructions(),
@@ -738,7 +869,19 @@ class SemanticAnalyzer {
             totalRobots: this.executableCode.robots.length,
             totalRobotVariables: robotVariables,
             totalAreas: this.executableCode.areas.length,
-            totalConexiones: this.calculateTotalConexiones()
+            totalConexiones: this.calculateTotalConexiones(),
+            robotPositions: robotPositions,
+            robotInitializations: robotInitializations,
+            initializedRobots: this.executableCode.robots.filter(r => r.active).length,
+            totalRobotSubtypes: this.executableCode.robots.filter(r => r.isSubtype).length,
+            areaAssignments: areaAssignments, // Nuevo: Información de asignaciones de áreas
+            robotAssignments: Array.from(this.robotAssignments.values()).map(assignment => ({
+                variableName: assignment.variableName,
+                robotName: assignment.robotName,
+                area: assignment.area,
+                position: assignment.position,
+                initialized: assignment.initialized
+            }))
         };
     }
 
@@ -832,5 +975,19 @@ class SemanticAnalyzer {
 
     isIdentifier(word) {
         return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(word);
+    }
+
+    validateProcessCallParameters(node, process) {
+        const expectedParams = process.parameters?.length || 0;
+        const actualParams = node.parameters?.length || 0;
+        
+        if (actualParams !== expectedParams) {
+            this.errors.push(`Número incorrecto de parámetros para '${node.name}'. Esperados: ${expectedParams}, obtenidos: ${actualParams}`);
+            this.processCalls[this.processCalls.length - 1].isValid = false;
+        }
+
+        node.parameters?.forEach((param, index) => {
+            this.visitParameter(param, node.name, index);
+        });
     }
 }
