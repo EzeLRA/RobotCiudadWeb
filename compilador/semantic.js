@@ -185,7 +185,6 @@ class SemanticAnalyzer {
                 name: robot.name,
                 instructions: this.compileInstructions(robot.body),
                 position: null, // Los subtipos no tienen posición inicial
-                direction: 'este',
                 bag: { flores: 0, papeles: 0 },
                 active: false, // Solo se activan cuando se inicializan en el main
                 variableName: null,

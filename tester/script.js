@@ -99,8 +99,269 @@ function actualizarNombreArchivo(nombre) {
 }
 
 /*
-     Funciones para renderizar resultados - MEJORADAS
+     Funciones para renderizar resultados
 */
+
+// NUEVA FUNCIÓN: Analizar conexiones entre robots
+function analizarConexionesRobots(result) {
+    if (!result || !result.executable || !result.communicationStats) {
+        return [];
+    }
+
+    const { robots, variables } = result.executable;
+    const { byRobot, connections } = result.communicationStats;
+    
+    const conexiones = [];
+
+    // 1. Mapear variables a robots
+    const mapaVariablesRobots = new Map();
+    if (variables && typeof variables === 'object') {
+        Object.entries(variables).forEach(([nombreVariable, infoVariable]) => {
+            if (infoVariable && infoVariable.type === 'robot' && infoVariable.robotName) {
+                mapaVariablesRobots.set(nombreVariable, infoVariable.robotName);
+            }
+        });
+    }
+
+    // 2. También usar robotAssignments si está disponible
+    if (result.robotAssignments && typeof result.robotAssignments === 'object') {
+        Object.entries(result.robotAssignments).forEach(([variableName, assignment]) => {
+            if (assignment.robotName) {
+                mapaVariablesRobots.set(variableName, assignment.robotName);
+            }
+        });
+    }
+
+    // 3. Analizar instrucciones de mensajería en cada robot
+    robots.forEach(robot => {
+        if (!robot.instructions) return;
+
+        // Buscar todas las instrucciones de envío y recepción
+        robot.instructions.forEach(instruccion => {
+            if (instruccion.instruction === 'EnviarMensaje' && instruccion.parameters && instruccion.parameters.length >= 2) {
+                const [mensaje, destino] = instruccion.parameters;
+                
+                // Verificar si el destino es una variable de robot
+                if (mapaVariablesRobots.has(destino)) {
+                    const robotDestino = mapaVariablesRobots.get(destino);
+                    const robotOrigen = robot.name;
+                    
+                    // Verificar si el robot destino tiene instrucciones de recepción correspondientes
+                    const robotDestinoObj = robots.find(r => r.name === robotDestino);
+                    if (robotDestinoObj && robotDestinoObj.instructions) {
+                        const tieneRecepcion = robotDestinoObj.instructions.some(inst => 
+                            inst.instruction === 'RecibirMensaje' && 
+                            inst.parameters && 
+                            inst.parameters.length >= 2 &&
+                            (inst.parameters[1] === robotOrigen || inst.parameters[1] === '*')
+                        );
+
+                        conexiones.push({
+                            origen: robotOrigen,
+                            destino: robotDestino,
+                            variableOrigen: robot.variableName,
+                            variableDestino: robotDestinoObj.variableName,
+                            tipo: tieneRecepcion ? 'bidireccional' : 'unidireccional',
+                            estado: tieneRecepcion ? 'completa' : 'incompleta',
+                            mensaje: mensaje,
+                            instruccionOrigen: instruccion,
+                            tieneRecepcion: tieneRecepcion
+                        });
+                    }
+                }
+            }
+        });
+    });
+
+    // 4. Agrupar conexiones únicas
+    const conexionesUnicas = [];
+    const conexionesVistas = new Set();
+
+    conexiones.forEach(conexion => {
+        const clave = `${conexion.origen}-${conexion.destino}`;
+        const claveInversa = `${conexion.destino}-${conexion.origen}`;
+        
+        if (!conexionesVistas.has(clave)) {
+            conexionesVistas.add(clave);
+            
+            // Buscar si existe la conexión inversa
+            const conexionInversa = conexiones.find(c => 
+                c.origen === conexion.destino && c.destino === conexion.origen
+            );
+
+            if (conexionInversa) {
+                // Es bidireccional
+                conexionesUnicas.push({
+                    ...conexion,
+                    tipo: 'bidireccional',
+                    estado: 'completa',
+                    conexionInversa: conexionInversa
+                });
+                conexionesVistas.add(claveInversa);
+            } else {
+                conexionesUnicas.push(conexion);
+            }
+        }
+    });
+
+    return conexionesUnicas;
+}
+
+// NUEVA FUNCIÓN: Renderizar conexiones entre robots
+function renderRobotConnections(result) {
+    const connectionsList = document.getElementById('conectionsList');
+    
+    if (!connectionsList) {
+        console.warn('Elemento robotConnectionsList no encontrado');
+        return;
+    }
+    
+    // Limpiar contenido anterior
+    connectionsList.innerHTML = '';
+    
+    // Verificar si hay resultados válidos
+    if (!result || !result.executable) {
+        connectionsList.innerHTML = `
+            <div class="empty-state">
+                <div>Compile para ver las conexiones entre robots</div>
+                <small>Los resultados se mostrarán después de la compilación</small>
+            </div>
+        `;
+        return;
+    }
+
+    const conexiones = analizarConexionesRobots(result);
+
+    if (conexiones.length > 0) {
+        const bidireccionalesCount = conexiones.filter(c => c.tipo === 'bidireccional').length;
+        const unidireccionalesCount = conexiones.filter(c => c.tipo === 'unidireccional').length;
+        const completasCount = conexiones.filter(c => c.estado === 'completa').length;
+
+        connectionsList.innerHTML = `
+            <div class="section-header">
+                <h3>Conexiones entre Robots (${conexiones.length})</h3>
+                <div class="relations-stats">
+                    ${bidireccionalesCount} bidireccionales,
+                    ${unidireccionalesCount} unidireccionales,
+                    ${completasCount} completas
+                </div>
+            </div>
+            <div class="relations-content">
+                <div class="connections-list">
+                    ${conexiones.map((conexion, index) => `
+                        <div class="connection-item ${conexion.tipo === 'bidireccional' ? 'connection-bidirectional' : 
+                                                    conexion.estado === 'completa' ? 'connection-complete' : 
+                                                    'connection-incomplete'}">
+                            <div class="connection-header">
+                                <div class="connection-title">
+                                    <i class="connection-icon">
+                                        ${conexion.tipo === 'bidireccional' ? '🔄' : 
+                                          conexion.estado === 'completa' ? '✅' : '➡️'}
+                                    </i>
+                                    <span class="robot-origin">${conexion.origen}</span>
+                                    <span class="connection-arrow">${conexion.tipo === 'bidireccional' ? '↔' : '→'}</span>
+                                    <span class="robot-destination">${conexion.destino}</span>
+                                </div>
+                                <div class="connection-status ${conexion.estado === 'completa' ? 'status-success' : 
+                                                              'status-warning'}">
+                                    ${conexion.tipo === 'bidireccional' ? 'Bidireccional' : 
+                                      conexion.estado === 'completa' ? 'Completa' : 'Unidireccional'}
+                                </div>
+                            </div>
+                            
+                            <div class="connection-details">
+                                <div class="detail-section">
+                                    <h4>Información de la Conexión</h4>
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label>Robot Origen:</label>
+                                            <span>${conexion.origen}</span>
+                                            ${conexion.variableOrigen ? `<small>(variable: ${conexion.variableOrigen})</small>` : ''}
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Robot Destino:</label>
+                                            <span>${conexion.destino}</span>
+                                            ${conexion.variableDestino ? `<small>(variable: ${conexion.variableDestino})</small>` : ''}
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Tipo:</label>
+                                            <span class="connection-type-badge ${conexion.tipo === 'bidireccional' ? 'bidirectional' : 'unidirectional'}">
+                                                ${conexion.tipo === 'bidireccional' ? 'Bidireccional' : 'Unidireccional'}
+                                            </span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Estado:</label>
+                                            <span class="status ${conexion.estado === 'completa' ? 'status-success' : 'status-warning'}">
+                                                ${conexion.estado === 'completa' ? 'Completa' : 'Incompleta'}
+                                            </span>
+                                        </div>
+                                        ${conexion.mensaje ? `
+                                        <div class="detail-item">
+                                            <label>Mensaje:</label>
+                                            <code class="message-content">${conexion.mensaje}</code>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                
+                                ${conexion.instruccionOrigen ? `
+                                <div class="detail-section">
+                                    <h4>Instrucción de Envío</h4>
+                                    <div class="instruction-details">
+                                        <div class="instruction-code">
+                                            <code>EnviarMensaje(${conexion.instruccionOrigen.parameters ? conexion.instruccionOrigen.parameters.join(', ') : ''})</code>
+                                            ${conexion.instruccionOrigen.line !== undefined ? 
+                                                `<span class="instruction-line">Línea ${conexion.instruccionOrigen.line}</span>` : 
+                                                ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : ''}
+                                
+                                ${conexion.tieneRecepcion ? `
+                                <div class="detail-section">
+                                    <h4>✅ Recepción Confirmada</h4>
+                                    <div class="reception-info">
+                                        <p>El robot destino tiene instrucciones de recepción correspondientes</p>
+                                    </div>
+                                </div>
+                                ` : `
+                                <div class="detail-section">
+                                    <h4>⚠️ Recepción No Confirmada</h4>
+                                    <div class="reception-warning">
+                                        <p>El robot destino no tiene instrucciones de recepción visibles para este mensaje</p>
+                                    </div>
+                                </div>
+                                `}
+                                
+                                ${conexion.tipo === 'bidireccional' && conexion.conexionInversa ? `
+                                <div class="detail-section">
+                                    <h4>🔄 Comunicación Bidireccional</h4>
+                                    <div class="bidirectional-info">
+                                        <p>Esta conexión es bidireccional. Ambos robots se envían mensajes entre sí.</p>
+                                        ${conexion.conexionInversa.mensaje ? `
+                                        <div class="inverse-message">
+                                            <strong>Mensaje inverso:</strong> <code>${conexion.conexionInversa.mensaje}</code>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    } else {
+        connectionsList.innerHTML = `
+            <div class="empty-state">
+                <div>No se encontraron conexiones entre robots</div>
+                <small>Los robots se comunican usando EnviarMensaje() y RecibirMensaje()</small>
+            </div>
+        `;
+    }
+}
 
 function vincularRobotsConAreas(result) {
     if (!result || !result.executable) {
@@ -713,6 +974,7 @@ function renderCompilerResults() {
         updateProcesosList(result); // Procesos
         updateRobotsList(result);   // Robots
         renderRobotAreaRelations(result); // Areas
+        renderRobotConnections(result); // NUEVO: Conexiones entre robots
 
     } else {
         alert('La compilación terminó con errores');
@@ -732,6 +994,11 @@ function renderCompilerResults() {
         document.getElementById('processList').innerHTML = '<div class="empty-state">No se puede mostrar procesos debido a errores de compilación</div>';
         document.getElementById('robotsList').innerHTML = '<div class="empty-state">No se puede mostrar robots debido a errores de compilación</div>';
         document.getElementById('areaList').innerHTML = '<div class="empty-state">No se puede mostrar áreas debido a errores de compilación</div>';
+        // Limpiar también la nueva sección de conexiones
+        const connectionsList = document.getElementById('robotConnectionsList');
+        if (connectionsList) {
+            connectionsList.innerHTML = '<div class="empty-state">No se puede mostrar conexiones debido a errores de compilación</div>';
+        }
     }
 }
 
@@ -805,6 +1072,7 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 'robotsList', message: 'Compile el código para ver los robots' },
         { id: 'processList', message: 'Compile el código para ver los procesos' },
         { id: 'areaList', message: 'Compile el código para ver las áreas' },
+        { id: 'robotConnectionsList', message: 'Compile el código para ver las conexiones entre robots' },
         { id: 'errorList', message: 'No hay errores' }
     ];
     

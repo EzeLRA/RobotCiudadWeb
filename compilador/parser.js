@@ -98,7 +98,7 @@ class Parser {
         const parameters = [];
         while (this.match(TOKEN_TYPES.PARAMETER)) {
             const paramToken = this.consume(TOKEN_TYPES.PARAMETER);
-            parameters.push(this.parseParameter(paramToken.value));
+            parameters.push(paramToken.value);
         }
         return parameters;
     }
