@@ -5,6 +5,7 @@ class Machine{
 		this.tokensList = null;
 		this.parsedSections = null;
 		this.finalReport = null;
+		this.executableCode = null;
 	}
 	
 	//Lexer
@@ -27,7 +28,7 @@ class Machine{
 				const parser = new Parser(this.tokensList);
 	        	this.parsedSections = parser.parse();
 			}else{
-				throw new Error(`La etapa uno no ha sido ejecutada correctamente.`);
+				throw new Error(`La etapa uno no se ejecuto correctamente.`);
 			}
 		}catch(error){
 			this.errors.push(error);
@@ -43,13 +44,29 @@ class Machine{
 				const semanticAnalyzer = new SemanticAnalyzer();
 	        	this.finalReport = semanticAnalyzer.analyze(this.parsedSections);
 			}else{
-				throw new Error(`La etapa dos no ha sido ejecutada correctamente.`);
+				throw new Error(`La etapa dos no se ejecuto correctamente.`);
 			}
 		}catch(error){
 			this.errors.push(error);
 		}
 		
 		return this.finalReport;
+	}
+
+	//CodeGenerator
+	stageFour(){
+		try{
+			if(this.finalReport != null){
+				const generator = new CodeGenerator(this.finalReport);
+				this.executableCode = generator.generateFormattedOutput('simulation');
+			}else{
+				throw new Error(`La etapa tres no se ejecuto correctamente.`);
+			}
+		}catch(error){
+			this.errors.push(error);
+		}
+		
+		return this.executableCode;
 	}
 
 	/*
@@ -63,6 +80,7 @@ class Machine{
 		this.tokensList = null;
 		this.parsedSections = null;
 		this.finalReport = null;
+		this.executableCode = null;
 	}
 
 	//Full workflow
@@ -70,6 +88,7 @@ class Machine{
 		this.stageOne();
 		this.stageTwo();
 		this.stageThree();
+		this.stageFour();
 	}
 
 	//Check for errors
@@ -109,6 +128,10 @@ class Machine{
 		return this.stringifyResult(this.finalReport);
 	}
 
+	simplifyStageFour(){
+		return this.stringifyResult(this.executableCode);
+	}
+
 	getResultOne(){
 		return this.tokensList;
 	}
@@ -119,6 +142,10 @@ class Machine{
 
 	getResultThree(){
 		return this.finalReport;
+	}
+
+	getResultFour(){
+		return this.executableCode;
 	}
 
 	reportErrors(){

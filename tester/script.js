@@ -976,6 +976,11 @@ function renderCompilerResults() {
         renderRobotAreaRelations(result); // Areas
         renderRobotConnections(result); // NUEVO: Conexiones entre robots
 
+        // Actualizar el código ejecutable
+        const executableCodeBlock = document.getElementById('executableCode');
+        const executableCode = machine.simplifyStageFour();
+        executableCodeBlock.innerHTML = `<pre class="executable-output">${executableCode}</pre>`;
+
     } else {
         alert('La compilación terminó con errores');
         
