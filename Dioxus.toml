@@ -2,13 +2,11 @@
 name = "R-infoWeb"
 
 [web.app]
-base_path = "/RobotCiudadWeb"
+title = "R-infoWeb"
+base_path = "RobotCiudadWeb/develop/experimental/architectury"
 
 [web.watcher]
 reload_html = true
-
-# HTML title tag content
-title = "R-infoWeb"
 
 # include `assets` in web platform
 [web.resource]
