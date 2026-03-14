@@ -1,9 +1,14 @@
 [application]
+name = "R-infoWeb"
 
 [web.app]
+base_path = "/RobotCiudadWeb"
+
+[web.watcher]
+reload_html = true
 
 # HTML title tag content
-title = "prueba2"
+title = "R-infoWeb"
 
 # include `assets` in web platform
 [web.resource]
