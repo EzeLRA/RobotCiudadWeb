@@ -3,6 +3,8 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{console, window};
 
+mod compiler;
+
 static CSS: Asset = asset!("/assets/main.css");
 
 // ==================== CONSTANTE CON EL CÓDIGO JAVASCRIPT ====================
