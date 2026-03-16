@@ -1,5 +1,5 @@
 use std::collections::{HashMap, HashSet};
-use crate::lib::compilerError::CompilerError;
+use crate::compiler::lib::compilerError::CompilerError;
 use super::super::parser::processor::{Program, Proceso, Robot, Instruccion, Expresion};
 
 pub struct SemanticAnalyzer {

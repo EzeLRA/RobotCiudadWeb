@@ -1,9 +1,9 @@
 [application]
-name = "R-infoWeb"
+name = "prueba2"
 
 [web.app]
-title = "R-infoWeb"
-base_path = "RobotCiudadWeb/develop/experimental/architectury"
+title = "prueba2"
+#base_path = "RobotCiudadWeb/develop/experimental/architectury"
 
 [web.watcher]
 reload_html = true

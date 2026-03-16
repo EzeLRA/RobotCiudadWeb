@@ -1,12 +1,9 @@
-use crate::lib::lexer::scanner::Lexer;
-use crate::lib::lexer::token::Keywords;
-use crate::lib::optimizer::opti_bot::{Info, Optimizer};
-use crate::lib::parser::processor::Parser;
-use crate::lib::semanticizer::analizer::SemanticAnalyzer;
+use crate::compiler::lib::lexer::scanner::Lexer;
+use crate::compiler::lib::lexer::token::Keywords;
+use crate::compiler::lib::optimizer::opti_bot::{Info, Optimizer};
+use crate::compiler::lib::parser::processor::Parser;
+use crate::compiler::lib::semanticizer::analizer::SemanticAnalyzer;
 use std::fs;
-
-mod lib;
-//mod tests;
 
 pub struct Compiler {
     source: String

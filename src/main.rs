@@ -4,6 +4,7 @@ use wasm_bindgen_futures::spawn_local;
 use web_sys::{console, window};
 
 mod compiler;
+use crate::compiler::machine::Compiler;
 
 static CSS: Asset = asset!("/assets/main.css");
 
@@ -148,6 +149,7 @@ fn App() -> Element {
     // Estados para manejar archivos importados/exportados
     let mut imported_content = use_signal(|| String::new());
     let mut saved_count = use_signal(|| 0);
+    let mut compile_status = use_signal(|| CompileStatus::None);
 
     // Inicializar JavaScript al cargar la app
     use_effect(move || {
@@ -160,7 +162,17 @@ fn App() -> Element {
         document::Stylesheet { href: CSS }
 
         div {
-            Navbar {}
+            Navbar {
+                compile_status: compile_status.clone(),
+                codigo: imported_content.clone(),
+                on_compile_complete: move |success: bool| {
+                    if success {
+                        compile_status.set(CompileStatus::Success);
+                    } else {
+                        compile_status.set(CompileStatus::Error);
+                    }
+                },
+            }
             ZonaTrabajo {}
             ZonaProgramador {
                 imported_content: imported_content.clone(),
@@ -176,17 +188,42 @@ fn App() -> Element {
     }
 }
 
+// ==================== ESTADO DE COMPILACIÓN ====================
+#[derive(Clone, Copy, PartialEq)]
+enum CompileStatus {
+    None,
+    Success,
+    Error,
+}
+
 /*
     Estructura de la barra de navegacion
 */
 
+#[derive(Props, PartialEq, Clone)]
+struct NavbarProps {
+    compile_status: Signal<CompileStatus>,
+    codigo: Signal<String>,
+    on_compile_complete: EventHandler<bool>,
+}
+
 #[component]
-fn Navbar() -> Element {
+fn Navbar(props: NavbarProps) -> Element {
     rsx! {
         nav {
-            BotonBarra { nombre: "Compilar".to_string() }
+            BotonCompilar {
+                codigo: props.codigo.clone(),
+                on_compile_complete: props.on_compile_complete.clone(),
+            }
             BotonBarra { nombre: "Ejecutar robot".to_string() }
             BotonBarra { nombre: "Mas opciones".to_string() }
+
+            // Indicador de compilación
+            div {
+                class: "compile-indicator",
+                class: if *props.compile_status.read() == CompileStatus::Success { "success" } else if *props.compile_status.read() == CompileStatus::Error { "error" } else { "none" },
+                aria_label: "Estado de compilación",
+            }
         }
     }
 }
@@ -195,6 +232,55 @@ fn Navbar() -> Element {
 fn BotonBarra(nombre: String) -> Element {
     rsx! {
         button { onclick: move |_| println!("Botón {nombre} clickeado!"), "{nombre}" }
+    }
+}
+
+#[derive(Props, PartialEq, Clone)]
+struct BotonCompilarProps {
+    codigo: Signal<String>,
+    on_compile_complete: EventHandler<bool>,
+}
+
+#[component]
+fn BotonCompilar(props: BotonCompilarProps) -> Element {
+    let mut is_compiling = use_signal(|| false);
+    
+    let handle_compile = move |_| {
+        if *is_compiling.read() {
+            return;
+        }
+        
+        let codigo = props.codigo.read().clone();
+        let on_complete = props.on_compile_complete.clone();
+        let mut is_compiling_clone = is_compiling.clone();
+        
+        spawn_local(async move {
+            is_compiling_clone.set(true);
+            
+            // Crear el compilador con el código
+            let compiler = Compiler::new(codigo);
+            
+            // Ejecutar la compilación
+            let result = compiler.compile(); // Asumiendo que compile() es async
+            
+            // Notificar el resultado
+            on_complete.call(result);
+            
+            is_compiling_clone.set(false);
+        });
+    };
+    
+    rsx! {
+        button {
+            class: if *is_compiling.read() { "compiling" } else { "" },
+            onclick: handle_compile,
+            disabled: *is_compiling.read(),
+            if *is_compiling.read() {
+                "Compilando..."
+            } else {
+                "Compilar"
+            }
+        }
     }
 }
 
@@ -304,7 +390,6 @@ pub struct ImportExportButtonsProps {
 }
 
 // ==================== COMPONENTE DE IMPORTAR/EXPORTAR ====================
-// ==================== COMPONENTE DE IMPORTAR/EXPORTAR ====================
 #[component]
 fn ImportExportButtons(mut props: ImportExportButtonsProps) -> Element {
     let mut js_ready = use_signal(|| false);
@@ -340,7 +425,6 @@ fn ImportExportButtons(mut props: ImportExportButtonsProps) -> Element {
         let on_loaded = props.on_file_loaded.clone();
         let mut filename_signal = props.filename_signal.clone();
         let mut is_importing_clone = is_importing.clone();
-        let mut is_exporting_clone = is_exporting.clone();
 
         spawn_local(async move {
             // Activar estado de carga SOLO para importar
@@ -376,7 +460,6 @@ fn ImportExportButtons(mut props: ImportExportButtonsProps) -> Element {
         let on_saved = props.on_file_saved.clone();
         let current_filename = props.filename_signal.read().clone();
         let mut is_exporting_clone = is_exporting.clone();
-        let mut is_importing_clone = is_importing.clone();
 
         // Determinar el nombre del archivo a usar
         let export_filename = if current_filename.is_empty() {
@@ -453,11 +536,6 @@ fn ImportExportButtons(mut props: ImportExportButtonsProps) -> Element {
                     || *is_importing.read(),
                 "data-tooltip": "Exportar código a archivo",
                 "Exportar"
-            }
-            if *has_modern_api.read() {
-                span { class: "api-indicator", title: "API moderna disponible",
-                    span { "✨" }
-                }
             }
         }
     }

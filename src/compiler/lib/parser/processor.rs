@@ -1,4 +1,4 @@
-use crate::lib::compilerError::CompilerError;
+use crate::compiler::lib::compilerError::CompilerError;
 use super::super::lexer::token::{Token, TokenType};
 
 #[derive(Debug, Clone)]

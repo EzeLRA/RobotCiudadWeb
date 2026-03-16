@@ -1,5 +1,5 @@
-use crate::Lexer;
-use crate::lib::lexer::token::TokenType;
+use crate::compiler::lib::lexer::scanner::Lexer;
+use crate::compiler::lib::lexer::token::TokenType;
 use std::fs;
 
 #[cfg(test)]

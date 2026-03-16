@@ -24,8 +24,10 @@ nav {
     background-color: #2d2d2d;
     padding: 10px;
     display: flex;
+    align-items: center;
     border-bottom: 1px solid #3e3e3e;
     flex-shrink: 0;
+    gap: 10px;
 }
 
 .nav-right {
@@ -33,6 +35,114 @@ nav {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+/* ===== NUEVOS ESTILOS PARA INDICADOR DE COMPILACIÓN ===== */
+.compile-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 5px currentColor;
+}
+
+.compile-indicator.none {
+    background-color: #808080;
+    color: #808080;
+}
+
+.compile-indicator.success {
+    background-color: #00ff00;
+    color: #00ff00;
+    animation: pulse-green 1.5s infinite;
+}
+
+.compile-indicator.error {
+    background-color: #ff0000;
+    color: #ff0000;
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 255, 0, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 255, 0, 0);
+    }
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 0, 0, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+    }
+}
+
+/* ===== NUEVOS ESTILOS PARA BOTÓN DE COMPILACIÓN ===== */
+button.compiling {
+    opacity: 0.8;
+    cursor: wait;
+    position: relative;
+    padding-right: 35px !important;
+    pointer-events: none;
+}
+
+button.compiling::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: translateY(-50%) rotate(360deg);
+    }
+}
+
+/* ===== MODIFICACIÓN DEL BOTÓN COMPILAR EXISTENTE ===== */
+nav button:first-of-type {
+    background-color: #4CAF50;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+nav button:first-of-type:hover {
+    background-color: #45a049;
+}
+
+nav button:first-of-type:active {
+    background-color: #3d8b40;
+}
+
+nav button:first-of-type:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+nav button:first-of-type:disabled:hover {
+    background-color: #4CAF50;
+    transform: none;
+    box-shadow: none;
 }
 
 .dropdown {
@@ -864,17 +974,12 @@ select, input[type="number"], input[type="text"] {
     width: 16px;
     height: 16px;
     top: 50%;
-    margin-left: 0;
+    right: 12px;
     margin-top: -8px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     border-top-color: white;
     animation: spin 0.8s linear infinite;
-}
-
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
 }
 
 /* Indicador de API moderna */
@@ -1344,6 +1449,23 @@ textarea:focus {
     .editor-header .import-export-container button:hover::after {
         display: none;
     }
+
+    /* Ajustes para el indicador de compilación en móvil */
+    .compile-indicator {
+        width: 10px;
+        height: 10px;
+        margin-left: 5px;
+    }
+    
+    button.compiling {
+        padding-right: 30px !important;
+    }
+    
+    button.compiling::after {
+        right: 8px;
+        width: 14px;
+        height: 14px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1387,5 +1509,21 @@ textarea:focus {
     
     textarea {
         min-height: 200px;
+    }
+    
+    /* Ajustes adicionales para el indicador en pantallas muy pequeñas */
+    .compile-indicator {
+        width: 8px;
+        height: 8px;
+    }
+    
+    button.compiling {
+        padding-right: 28px !important;
+    }
+    
+    button.compiling::after {
+        right: 6px;
+        width: 12px;
+        height: 12px;
     }
 }
