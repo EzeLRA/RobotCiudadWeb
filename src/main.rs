@@ -150,6 +150,7 @@ fn App() -> Element {
     let mut imported_content = use_signal(|| String::new());
     let mut saved_count = use_signal(|| 0);
     let mut compile_status = use_signal(|| CompileStatus::None);
+    let mut mensajes_compilador = use_signal(|| Vec::<String>::new());
 
     // Inicializar JavaScript al cargar la app
     use_effect(move || {
@@ -162,10 +163,13 @@ fn App() -> Element {
         document::Stylesheet { href: CSS }
 
         div {
+            BarraPrincipal {}
+            ZonaTrabajo {}
             Navbar {
                 compile_status: compile_status.clone(),
                 codigo: imported_content.clone(),
-                on_compile_complete: move |success: bool| {
+                on_compile_complete: move |(success, mensajes): (bool, Vec<String>)| {
+                    mensajes_compilador.set(mensajes);
                     if success {
                         compile_status.set(CompileStatus::Success);
                     } else {
@@ -173,7 +177,6 @@ fn App() -> Element {
                     }
                 },
             }
-            ZonaTrabajo {}
             ZonaProgramador {
                 imported_content: imported_content.clone(),
                 saved_count: saved_count.clone(),
@@ -183,6 +186,38 @@ fn App() -> Element {
                 on_file_saved: move || {
                     saved_count += 1;
                 },
+            }
+            MensajesCompilador { mensajes: mensajes_compilador.read().clone() }
+        }
+    }
+}
+
+#[component]
+fn BarraPrincipal() -> Element {
+    let mut velocidad = use_signal(|| 5);
+    rsx! {
+        nav {
+            button { "Ejecutar programa" }
+            button { "Terminar programa" }
+            button { "Más opciones" }
+        }
+        nav {
+            button { "Retroceder" }
+            button { "Parar" }
+            button { "Avanzar" }
+            div { class: "controles-robot",
+                h3 { "Velocidad del Robot : {velocidad}" }
+                input {
+                    r#type: "range",
+                    min: "1",
+                    max: "10",
+                    value: "{velocidad}",
+                    oninput: move |evt| {
+                        if let Ok(v) = evt.value().parse::<i32>() {
+                            velocidad.set(v)
+                        }
+                    },
+                }
             }
         }
     }
@@ -197,14 +232,14 @@ enum CompileStatus {
 }
 
 /*
-    Estructura de la barra de navegacion
+    Estructura de la barra de navegacion (Para la zona del programador)
 */
 
 #[derive(Props, PartialEq, Clone)]
 struct NavbarProps {
     compile_status: Signal<CompileStatus>,
     codigo: Signal<String>,
-    on_compile_complete: EventHandler<bool>,
+    on_compile_complete: EventHandler<(bool, Vec<String>)>,
 }
 
 #[component]
@@ -213,11 +248,13 @@ fn Navbar(props: NavbarProps) -> Element {
         nav {
             BotonCompilar {
                 codigo: props.codigo.clone(),
-                on_compile_complete: props.on_compile_complete.clone(),
+                on_compile_complete: move |(success, mensajes): (bool, Vec<String>)| {
+                    props.on_compile_complete.call((success, mensajes));
+                },
             }
-            BotonBarra { nombre: "Ejecutar robot".to_string() }
-            BotonBarra { nombre: "Mas opciones".to_string() }
-
+            // Botones para edicion de texto
+            button { "<-" }
+            button { "->" }
             // Indicador de compilación
             div {
                 class: "compile-indicator",
@@ -228,6 +265,7 @@ fn Navbar(props: NavbarProps) -> Element {
     }
 }
 
+//Componente auxiliar 
 #[component]
 fn BotonBarra(nombre: String) -> Element {
     rsx! {
@@ -238,7 +276,7 @@ fn BotonBarra(nombre: String) -> Element {
 #[derive(Props, PartialEq, Clone)]
 struct BotonCompilarProps {
     codigo: Signal<String>,
-    on_compile_complete: EventHandler<bool>,
+    on_compile_complete: EventHandler<(bool, Vec<String>)>,
 }
 
 #[component]
@@ -260,11 +298,15 @@ fn BotonCompilar(props: BotonCompilarProps) -> Element {
             // Crear el compilador con el código
             let compiler = Compiler::new(codigo);
             
-            // Ejecutar la compilación
-            let result = compiler.compile(); // Asumiendo que compile() es async
+            // Ejecutar la compilación y obtener los mensajes
+            let mensajes = compiler.compile();
             
-            // Notificar el resultado
-            on_complete.call(result);
+            // Determinar si la compilación fue exitosa (sin errores)
+            let has_errors = mensajes.iter().any(|msg| msg.contains("error") || msg.contains("Error"));
+            let success = !has_errors && mensajes.is_empty();
+
+            // Notificar el resultado con los mensajes
+            on_complete.call((success, mensajes));
             
             is_compiling_clone.set(false);
         });
@@ -373,6 +415,54 @@ fn ZonaTrabajo() -> Element {
                     span { "{tamano}x{tamano}" }
                     " | Zoom: "
                     span { "{zoom}%" }
+                }
+            }
+        }
+    }
+}
+
+/*
+    Espacio de mensajes del compilador
+*/
+
+#[derive(Props, PartialEq, Clone)]
+struct MensajesCompiladorProps {
+    mensajes: Vec<String>,
+}
+
+#[component]
+fn MensajesCompilador(props: MensajesCompiladorProps) -> Element {
+    rsx! {
+        section { class: "mensajes-compilador",
+            //Titulo del panel de mensajes
+            div { class: "mensajes-header",
+                h3 { "Mensajes del Compilador" }
+            }
+            //Panel de mensajes
+            div { class: "mensajes-box",
+                div { class: "mensajes-content",
+                    {
+                        if props.mensajes.is_empty() {
+                            rsx! {
+                                p { "No hay mensajes por el momento." }
+                            }
+                        } else {
+                            rsx! {
+                                ul { class: "mensajes-lista",
+                                    {
+                                        props
+                                            .mensajes
+                                            .iter()
+                                            .map(|mensaje| {
+                                                rsx! {
+                                                    li { class: "mensaje-item", "{mensaje}" }
+                                                }
+                                            })
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -585,7 +675,7 @@ comenzar
   AsignarArea(R_info, ciudad)
   Iniciar(R_info, 1,1)
 fin"#.to_string());
-    let mut velocidad = use_signal(|| 5);
+    
     let mut cursor_pos = use_signal(|| (1, 1)); // (línea, columna)
 
     // Sincronizar el contenido del código con imported_content cuando cambia
@@ -674,22 +764,7 @@ fin"#.to_string());
                                 button { class: "BtnAgregar", "Agregar" }
                             }
                         }
-
-                        div { class: "controles-robot",
-                            h3 { "Velocidad del Robot" }
-                            input {
-                                r#type: "range",
-                                min: "1",
-                                max: "10",
-                                value: "{velocidad}",
-                                oninput: move |evt| {
-                                    if let Ok(v) = evt.value().parse::<i32>() {
-                                        velocidad.set(v)
-                                    }
-                                },
-                            }
-                            span { "{velocidad}" }
-                        }
+                    
                     }
                 }
             }

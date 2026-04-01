@@ -1,4 +1,4 @@
-/* Estilos generales - MODO OSCURO ÚNICAMENTE */
+ /* Estilos generales - MODO OSCURO ÚNICAMENTE */
 * {
     margin: 0;
     padding: 0;
@@ -119,32 +119,6 @@ button.compiling::after {
 }
 
 /* ===== MODIFICACIÓN DEL BOTÓN COMPILAR EXISTENTE ===== */
-nav button:first-of-type {
-    background-color: #4CAF50;
-    position: relative;
-    transition: all 0.3s ease;
-}
-
-nav button:first-of-type:hover {
-    background-color: #45a049;
-}
-
-nav button:first-of-type:active {
-    background-color: #3d8b40;
-}
-
-nav button:first-of-type:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-nav button:first-of-type:disabled:hover {
-    background-color: #4CAF50;
-    transform: none;
-    box-shadow: none;
-}
-
 .dropdown {
     position: relative;
     display: inline-block;
@@ -296,63 +270,6 @@ nav button:focus:not(:active)::after {
         opacity: 0;
         transform: scale(40, 40);
     }
-}
-
-/* Estilo diferente para el primer botón (Compilar) */
-nav button:first-of-type {
-    background-color: #4CAF50;
-}
-
-nav button:first-of-type:hover {
-    background-color: #45a049;
-}
-
-nav button:first-of-type:active {
-    background-color: #3d8b40;
-}
-
-/* Estilo diferente para el segundo botón (Ejecutar robot) */
-nav button:nth-of-type(2) {
-    background-color: #ff9800;
-}
-
-nav button:nth-of-type(2):hover {
-    background-color: #e68900;
-}
-
-nav button:nth-of-type(2):active {
-    background-color: #cc7a00;
-}
-
-/* Estilo para el tercer botón (Más opciones) */
-nav button:nth-of-type(3) {
-    background-color: #9c27b0;
-}
-
-nav button:nth-of-type(3):hover {
-    background-color: #7b1fa2;
-}
-
-nav button:nth-of-type(3):active {
-    background-color: #6a1b9a;
-}
-
-/* Iconos para los botones de navegación */
-nav button::before {
-    margin-right: 8px;
-    font-size: 16px;
-}
-
-nav button:first-of-type::before {
-    content: "⚙️";
-}
-
-nav button:nth-of-type(2)::before {
-    content: "🤖";
-}
-
-nav button:nth-of-type(3)::before {
-    content: "📋";
 }
 
 /* Contenedor principal con scroll */
@@ -532,6 +449,23 @@ nav button:nth-of-type(3)::before {
     pointer-events: none;
 }
 
+/* Panel de mensajes del compilador */
+
+.mensajes-header {
+    background-color: #555;
+    padding: 10px 10px;
+}
+
+.mensajes-box {
+    background-color: #222;
+    padding : 10px;
+}
+
+/*
+.mensajes-content {
+}
+*/
+
 /* Cabecera del panel de objetos */
 .panel-header {
     display: flex;
@@ -666,16 +600,15 @@ select, input[type="number"], input[type="text"] {
 }
 
 /* Controles del robot */
+/*
 .controles-robot {
-    margin-top: 20px;
-    padding-top: 15px;
     border-top: 1px solid #3e3e3e;
     transition: border-color 0.3s;
 }
-
+*/
 .controles-robot h3 {
     margin-bottom: 10px;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .velocidad-robot {
