@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use super::token::{Token, TokenType, Keywords};
+use crate::compiler::lib::lexer::token::{Token, TokenType, Keywords};
 use crate::compiler::lib::compilerError::{CompilerError};
 
 pub struct Lexer<'a> {

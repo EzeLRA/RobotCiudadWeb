@@ -3,7 +3,7 @@ name = "prueba2"
 
 [web.app]
 title = "prueba2"
-base_path = "RobotCiudadWeb"
+#base_path = "RobotCiudadWeb"
 
 [web.resource]
 style = []

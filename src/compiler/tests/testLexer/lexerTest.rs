@@ -4,7 +4,7 @@ use std::fs;
 
 #[cfg(test)]
 mod testing_lexer{
-    use crate::lib::lexer;
+    use crate::compiler::lib::lexer;
 
     use super::*;
 

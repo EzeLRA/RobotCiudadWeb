@@ -42,14 +42,14 @@ impl Compiler {
                         }
                     }
                     Err(e) => {
-                        let error_string = format!("Error al generar el AST: {:?}", e);
+                        let error_string = format!("Error de Parseo del compilador: {:?}", e);
                         results.extend(vec![error_string]);
                     }
                 }
             }
             Err(e) => {
                 //eprintln!("Lexing error: {}", e);
-                let error_string = format!("Lexing error: {:?}", e);
+                let error_string = format!("Error Lexico del compilador: {:?}", e);
                 results.extend(vec![error_string]);
             }
         }
